@@ -1,111 +1,143 @@
 pipeline {
     agent any
-
     environment {
-        AWS_CREDENTIALS = credentials('aws-credentials-file')
+        AWS_CREDENTIALS_FILE = credentials('aws-credentials-file')
+        PATH = "${env.PATH}:/usr/local/bin"
+    }
+
+    parameters {
+        choice(name: 'BRANCH_NAME', choices: [''], description: 'Branch to build')
+        choice(name: 'REPOSITORY_URL', choices: [''], description: 'Repository URL')
     }
 
     stages {
         stage('Load Secrets') {
             steps {
                 script {
+                    def envPrefix = params.BRANCH_NAME == 'develop' ? 'DEV' : 'PROD'
+                    echo "Deployment to ****** ${envPrefix} ****** - Start"
+
                     echo "Stage: Load Secrets - Start"
-                    try {
-                        def awsCredentials = readJSON text: AWS_CREDENTIALS
-                        echo "AWS Credentials Loaded: ${awsCredentials}"
+                    def awsCredentialsContent = readFile(AWS_CREDENTIALS_FILE)
+                    def awsCredentials = readJSON text: awsCredentialsContent
 
-                        if (!awsCredentials.AWS_ACCESS_KEY_ID || !awsCredentials.AWS_SECRET_ACCESS_KEY) {
-                            error "AWS credentials are not properly configured"
-                        }
+                    env.AWS_ACCOUNT_ID = awsCredentials.AWS_ACCOUNT_ID
+                    env.ECR_REGION = awsCredentials.ECR_REGION
+                    env.DOCKER_REGISTRY = "${awsCredentials.AWS_ACCOUNT_ID}.dkr.ecr.${awsCredentials.ECR_REGION}.amazonaws.com"
 
-                        env.AWS_ACCESS_KEY_ID = awsCredentials.AWS_ACCESS_KEY_ID
-                        env.AWS_SECRET_ACCESS_KEY = awsCredentials.AWS_SECRET_ACCESS_KEY
-                        env.AWS_ACCOUNT_ID = awsCredentials.AWS_ACCOUNT_ID
-                        env.ECR_REGION = awsCredentials.ECR_REGION
-                        env.ECR_REPOSITORY = awsCredentials.ECR_REPOSITORY
-                        env.STAGING_BUCKET = awsCredentials.STAGING_BUCKET
-                        env.PRODUCTION_BUCKET = awsCredentials.PRODUCTION_BUCKET
-                        env.CLUSTER_NAME = awsCredentials.CLUSTER_NAME
-                        env.BACKEND_SERVICE_NAME = awsCredentials.BACKEND_SERVICE_NAME
-                        env.DOCKER_REGISTRY = "${awsCredentials.AWS_ACCOUNT_ID}.dkr.ecr.${awsCredentials.ECR_REGION}.amazonaws.com"
-                        echo "Stage: Load Secrets - Completed"
-                    } catch (Exception e) {
-                        echo "Error loading AWS credentials: ${e.message}"
-                        error "Failed to load AWS credentials"
-                    }
+                    env.ECR_REPOSITORY = awsCredentials["${envPrefix}_ECR_REPOSITORY"]
+                    env.BUCKET_NAME = awsCredentials["${envPrefix}_BUCKET_NAME"]
+                    env.CLUSTER_NAME = awsCredentials["${envPrefix}_CLUSTER_NAME"]
+                    env.BACKEND_SERVICE_NAME = awsCredentials["${envPrefix}_BACKEND_SERVICE_NAME"]
+                    env.DB_URL = awsCredentials["${envPrefix}_DB_URL"]
+                    env.DB_USER = awsCredentials["${envPrefix}_DB_USER"]
+                    env.DB_PASSWORD = awsCredentials["${envPrefix}_DB_PASSWORD"]
+
+                    echo "Stage: Load Secrets - Completed"
                 }
             }
         }
         stage('Checkout') {
             steps {
                 echo "Stage: Checkout - Start"
-                git 'https://github.com/ninganzaremy/goalglo.git'
+                checkout([$class: 'GitSCM', branches: [[name: "*/${params.BRANCH_NAME}"]],
+                          userRemoteConfigs: [[url: "${params.REPOSITORY_URL}"]]])
                 echo "Stage: Checkout - Completed"
             }
         }
-        stage('Build Backend') {
-            steps {
-                echo "Stage: Build Backend - Start"
-                dir('backend') {
-                    sh './mvnw clean package'
-                }
-                echo "Stage: Build Backend - Completed"
-            }
-        }
-        stage('Build Frontend') {
-            steps {
-                echo "Stage: Build Frontend - Start"
-                dir('frontend') {
-                    sh 'yarn install'
-                    sh 'yarn run build'
-                }
-                echo "Stage: Build Frontend - Completed"
-            }
-        }
-        stage('Docker Build & Push') {
-            steps {
-                echo "Stage: Docker Build & Push - Start"
-                script {
-                    docker.withRegistry("https://${env.DOCKER_REGISTRY}", "ecr:${env.ECR_REGION}:aws-credentials") {
-                        def backendImage = docker.build("${env.ECR_REPOSITORY}:${env.BUILD_NUMBER}", './backend')
-                        def frontendImage = docker.build("goalglo-frontend:${env.BUILD_NUMBER}", './frontend')
-
-                        backendImage.push()
-                        frontendImage.push()
+        stage('Build and Test') {
+            parallel {
+                stage('Build Backend') {
+                    steps {
+                        echo "Stage: Build Backend - Start"
+                        dir('backend') {
+                            withEnv([
+                                "SPRING_DATASOURCE_URL=${env.DB_URL}",
+                                "SPRING_DATASOURCE_USERNAME=${env.DB_USER}",
+                                "SPRING_DATASOURCE_PASSWORD=${env.DB_PASSWORD}",
+                                "SPRING_JPA_HIBERNATE_DDL_AUTO=update",
+                                "SPRING_JPA_SHOW_SQL=true"
+                            ]) {
+                                sh './mvnw clean package'
+                            }
+                        }
+                        echo "Stage: Build Backend - Completed"
                     }
                 }
-                echo "Stage: Docker Build & Push - Completed"
-            }
-        }
-        stage('Update Task Definition') {
-            steps {
-                echo "Stage: Update Task Definition - Start"
-                script {
-                    def taskDefinition = readFile file: 'backend/ecs-task-definition.json'
-                    def updatedTaskDefinition = taskDefinition.replace("${env.DOCKER_REGISTRY}/${env.ECR_REPOSITORY}", "${env.DOCKER_REGISTRY}/${env.ECR_REPOSITORY}:${env.BUILD_NUMBER}")
-                    writeFile file: 'backend/ecs-task-definition-updated.json', text: updatedTaskDefinition
+                stage('Build Frontend') {
+                    steps {
+                        echo "Stage: Build Frontend - Start"
+                        dir('frontend') {
+                            nodejs('NodeJS') {
+                                sh '''
+                                yarn install --network-timeout 100000 --frozen-lockfile
+                                yarn build
+                                '''
+                            }
+                        }
+                        echo "Stage: Build Frontend - Completed"
+                    }
                 }
-                echo "Stage: Update Task Definition - Completed"
             }
         }
-        stage('Deploy to Environment') {
+        stage('Docker Build & Push Backend') {
+            steps {
+                echo "Stage: Docker Build & Push Backend - Start"
+                script {
+                    writeFile file: 'Dockerfile.backend', text: '''
+                    # Use the official OpenJDK image as a base
+                    FROM openjdk:11-jre-slim
+
+                    # Set the working directory
+                    WORKDIR /app
+
+                    # Copy the jar file
+                    COPY target/*.jar app.jar
+
+                    # Expose the port the application runs on
+                    EXPOSE 8080
+
+                    # Run the application
+                    ENTRYPOINT ["java", "-jar", "app.jar"]
+                    '''
+
+                    withCredentials([usernamePassword(credentialsId: 'aws-ecr-credentials', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                        sh '''
+                        set +x
+                        aws ecr get-login-password --region ${ECR_REGION} | docker login --username AWS --password-stdin ${DOCKER_REGISTRY}
+                        docker build -t ${DOCKER_REGISTRY}/${ECR_REPOSITORY}:${BUILD_NUMBER} -f Dockerfile.backend ./backend
+                        docker push ${DOCKER_REGISTRY}/${ECR_REPOSITORY}:${BUILD_NUMBER}
+                        set -x
+                        '''
+                    }
+                }
+                echo "Stage: Docker Build & Push Backend - Completed"
+            }
+        }
+        stage('Deploy Frontend to S3') {
+            steps {
+                echo "Stage: Deploy Frontend to S3 - Start"
+                script {
+                    sh '''
+                    set +x
+                    aws s3 sync ./frontend/dist s3://${BUCKET_NAME} --delete
+                    aws s3 website s3://${BUCKET_NAME} --index-document index.html --error-document index.html
+                    set -x
+                    '''
+                }
+                echo "Stage: Deploy Frontend to S3 - Completed"
+            }
+        }
+        stage('Deploy Backend to ECR') {
             steps {
                 echo "Stage: Deploy to Environment - Start"
                 script {
-                    if (params.BRANCH_NAME == 'develop') {
-                        echo "Deploying to Staging Environment"
-                        withAWS(credentials: 'aws-credentials', region: "${env.ECR_REGION}") {
-                            sh "aws ecs update-service --cluster ${env.CLUSTER_NAME} --service ${env.BACKEND_SERVICE_NAME} --force-new-deployment"
-                            sh "aws s3 sync ./frontend/dist s3://${env.STAGING_BUCKET}"
-                        }
-                    } else if (params.BRANCH_NAME == 'main') {
-                        echo "Deploying to Production Environment"
-                        withAWS(credentials: 'aws-credentials', region: "${env.ECR_REGION}") {
-                            sh "aws ecs update-service --cluster ${env.CLUSTER_NAME} --service ${env.BACKEND_SERVICE_NAME} --force-new-deployment"
-                            sh "aws s3 sync ./frontend/dist s3://${env.PRODUCTION_BUCKET}"
-                        }
-                    } else {
-                        echo "Deployment for ${params.BRANCH_NAME} branch not configured"
+                    withAWS(credentials: 'aws-ecr-credentials', region: "${env.ECR_REGION}") {
+                        sh '''
+                        set +x
+                        aws ecs update-service --cluster ${CLUSTER_NAME} --service ${BACKEND_SERVICE_NAME} --force-new-deployment
+                        set -x
+                        '''
                     }
                 }
                 echo "Stage: Deploy to Environment - Completed"
