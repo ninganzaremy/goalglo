@@ -1,34 +1,8 @@
-# OpenJDK
+# Use the official OpenJDK image as a base
 FROM openjdk:11-jre-slim
 
 # Set the working directory
 WORKDIR /app
-
-# Copy the pom.xml and other required files
-COPY pom.xml ./
-
-# Download dependencies
-RUN ./mvnw dependency:go-offline
-
-# Copy the rest of the application code
-COPY src ./src
-
-# Define build arguments
-ARG SPRING_DATASOURCE_URL
-ARG SPRING_DATASOURCE_USERNAME
-ARG SPRING_DATASOURCE_PASSWORD
-ARG SPRING_JPA_HIBERNATE_DDL_AUTO
-ARG SPRING_JPA_SHOW_SQL
-
-# Set environment variables
-ENV SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-ENV SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-ENV SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
-ENV SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO}
-ENV SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL}
-
-# Package the application
-RUN ./mvnw clean package
 
 # Copy the jar file
 COPY target/*.jar app.jar
