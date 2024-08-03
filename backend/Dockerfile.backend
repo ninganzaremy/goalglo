@@ -4,8 +4,12 @@ FROM openjdk:11-jre-slim
 # Set the working directory
 WORKDIR /app
 
-# Copy the pom.xml and other required files
-COPY pom.xml ./
+# Copy the Maven wrapper and necessary files
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+
+# Ensure the Maven wrapper is executable
+RUN chmod +x mvnw
 
 # Download dependencies
 RUN ./mvnw dependency:go-offline
