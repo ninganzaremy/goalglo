@@ -32,6 +32,9 @@ COPY src ./src
 # Package the application
 RUN ./mvnw clean package
 
+# Verify the target directory and its contents
+RUN ls -la target
+
 # Copy the jar file
 COPY target/*.jar app.jar
 
