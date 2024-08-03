@@ -14,6 +14,15 @@ COPY mvnw pom.xml ./
 # Ensure the Maven wrapper is executable
 RUN chmod +x mvnw
 
+# Set build arguments for Spring Boot
+ARG SPRING_DATASOURCE_URL
+ARG SPRING_DATASOURCE_USERNAME
+ARG SPRING_DATASOURCE_PASSWORD
+ARG SPRING_JPA_HIBERNATE_DDL_AUTO
+ARG SPRING_JPA_SHOW_SQL
+ARG SPRING_DATASOURCE_DRIVER_CLASS_NAME
+ARG SPRING_JPA_DATABASE_PLATFORM
+
 # Download dependencies
 RUN ./mvnw dependency:go-offline
 
@@ -29,5 +38,5 @@ COPY target/*.jar app.jar
 # Expose the port the application runs on
 EXPOSE 8080
 
-# Run the application
+# Run the application with the environment variables
 ENTRYPOINT ["java", "-jar", "app.jar"]
