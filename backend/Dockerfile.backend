@@ -1,5 +1,8 @@
-# Use the official OpenJDK image as a base
-FROM openjdk:11-jre-slim
+# Use the custom Jenkins image with Amazon Corretto 21 already installed
+FROM goalglo-jenkins-image:latest
+
+# Switch to root user to install packages
+USER root
 
 # Set the working directory
 WORKDIR /app
@@ -10,12 +13,6 @@ COPY mvnw pom.xml ./
 
 # Ensure the Maven wrapper is executable
 RUN chmod +x mvnw
-
-# Set JAVA_HOME environment variable
-ENV JAVA_HOME=/usr/local/openjdk-11
-
-# Install Maven
-RUN apt-get update && apt-get install -y maven
 
 # Download dependencies
 RUN ./mvnw dependency:go-offline
