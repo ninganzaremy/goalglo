@@ -5,15 +5,15 @@ pipeline {
     }
 
     parameters {
-        choice(name: 'BRANCH_NAME', choices: ['test', 'main'], description: 'Branch to build')
-        choice(name: 'REPOSITORY_URL', choices: ['https://github.com/ninganzaremy/goalglo.git'], description: 'Repository URL')
+        choice(name: 'BRANCH_NAME', choices: [''], description: 'Branch to build')
+        choice(name: 'REPOSITORY_URL', choices: [''], description: 'Repository URL')
     }
 
     stages {
         stage('Load Secrets') {
             steps {
                 script {
-                    def envPrefix = params.BRANCH_NAME == 'test' ? 'DEV' : 'PROD'
+                    def envPrefix = params.BRANCH_NAME == 'develop' ? 'DEV' : 'PROD'
 
                     echo "Deployment to ****** ${envPrefix} ****** - Start"
 
