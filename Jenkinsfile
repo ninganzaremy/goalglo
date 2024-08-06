@@ -113,8 +113,6 @@ def buildFrontendImage() {
         dir('frontend') {
             sh '''
             set +x
-            yarn install --network-timeout 100000 --frozen-lockfile
-            yarn build
             docker build -t ${DOCKER_REGISTRY}/${ECR_FRONTEND_REPOSITORY}:${BUILD_NUMBER} -f Dockerfile.frontend .
             set -x
             '''
@@ -133,7 +131,7 @@ def pushAndDeploy() {
                     pushBackendImage()
                 },
                 pushFrontend: {
-                    pushFrontendImage()
+                    /* pushFrontendImage() */
                 }
             )
             parallel(
@@ -192,7 +190,7 @@ def deployFrontendToS3() {
         echo "Stage: Deploy Frontend to S3 - Start"
         sh '''
         set +x
-        aws s3 sync ./frontend/dist s3://${BUCKET_NAME} --delete
+        docker save ${DOCKER_REGISTRY}/${ECR_FRONTEND_REPOSITORY}:${BUILD_NUMBER} | tar -xOf - --wildcards '*/layer.tar' | tar -x -C ./dist && aws s3 sync ./dist/usr/share/nginx/html s3://${BUCKET_NAME} --delete
         aws s3 website s3://${BUCKET_NAME} --index-document index.html --error-document index.html
         set -x
         '''
