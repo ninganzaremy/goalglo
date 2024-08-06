@@ -1,4 +1,29 @@
+# Stage 1: Build the React Vite app
+FROM node:18-alpine AS builder
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the package.json and yarn.lock files
+COPY package.json yarn.lock ./
+
+# Install dependencies
+RUN yarn install --network-timeout 100000 --frozen-lockfile
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the application
+RUN yarn build
+
+# Stage 2: Serve the app with Nginx
 FROM nginx:alpine
-COPY dist /usr/share/nginx/html
+
+# Copy built files from the builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port 80
 EXPOSE 80
+
+# Command to run Nginx
 CMD ["nginx", "-g", "daemon off;"]
