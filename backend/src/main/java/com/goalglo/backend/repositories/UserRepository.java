@@ -1,8 +1,12 @@
 package com.goalglo.backend.repositories;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import com.goalglo.backend.entities.User;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
-   User findByUsernameAndPassword(String username, String password);
+import java.util.Optional;
+import java.util.UUID;
+
+public interface UserRepository extends JpaRepository<User, UUID> {
+   Optional<User> findByEmail(String email);
+   Optional<User> findByUsername(String username);
 }
