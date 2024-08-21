@@ -1,9 +1,9 @@
 package com.goalglo.backend.entities;
 
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,26 +12,30 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "clients")
+public class Client {
    @Id
    @GeneratedValue
    private UUID id;
 
-   @Column(nullable = false, unique = true)
+   @ManyToOne(fetch = FetchType.LAZY)
+   @JoinColumn(name = "user_id", nullable = false)
+   private User user;
+
+   @Column(nullable = false)
+   private String firstName;
+
+   @Column(nullable = false)
+   private String lastName;
+
+   @Column(nullable = false)
    private String email;
 
-   @Column(nullable = false, unique = true)
-   private String username;
-
    @Column(nullable = false)
-   private String password;
+   private String phoneNumber;
 
-   @Column(nullable = false)
-   private String role;
-
-   @Column(nullable = false, columnDefinition = "boolean default false")
-   private boolean emailVerified = false;
+   @Column
+   private String address;
 
    @Column(name = "created_at", nullable = false, updatable = false)
    private LocalDateTime createdAt = LocalDateTime.now();
