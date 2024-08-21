@@ -1,7 +1,11 @@
 package com.goalglo.backend.repositories;
 
-import org.springframework.data.jpa.repository.JpaRepository;
 import com.goalglo.backend.entities.Appointment;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
+import java.util.List;
+import java.util.UUID;
+
+public interface AppointmentRepository extends JpaRepository<Appointment, UUID> {
+   List<Appointment> findByClientId(UUID clientId);
 }
