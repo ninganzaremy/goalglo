@@ -1,54 +1,100 @@
 package com.goalglo.backend.controllers;
 
+import com.goalglo.backend.dto.BlogPostDTO;
+import com.goalglo.backend.entities.BlogPost;
+import com.goalglo.backend.services.BlogPostService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-import com.goalglo.backend.entities.BlogPost;
-import com.goalglo.backend.repositories.BlogPostRepository;
-
+/**
+ * REST controller for managing blog posts.
+ */
 @RestController
-@RequestMapping("/api/blogs")
+@RequestMapping("/api/blog-posts")
 public class BlogPostController {
 
-   private final BlogPostRepository blogPostRepository;
+   private final BlogPostService blogPostService;
 
+   /**
+    * Constructs a new BlogPostController with the specified BlogPostService.
+    *
+    * @param blogPostService the service for managing blog posts
+    */
    @Autowired
-   public BlogPostController(BlogPostRepository blogPostRepository) {
-      this.blogPostRepository = blogPostRepository;
+   public BlogPostController(BlogPostService blogPostService) {
+      this.blogPostService = blogPostService;
    }
 
-   @GetMapping
-   public List<BlogPost> getAllBlogPosts() {
-      return blogPostRepository.findAll();
-   }
-
-   @GetMapping("/{id}")
-   public BlogPost getBlogPostById(@PathVariable Long id) {
-      return blogPostRepository.findById(id).orElse(null);
-   }
-
+   /**
+    * Creates a new blog post.
+    *
+    * @param blogPostDTO the blog post data transfer object
+    * @return a ResponseEntity containing the created blog post DTO and HTTP status CREATED
+    */
    @PostMapping
-   public BlogPost createBlogPost(@RequestBody BlogPost blogPost) {
-      blogPost.setCreatedAt(LocalDateTime.now());
-      return blogPostRepository.save(blogPost);
+   public ResponseEntity<BlogPostDTO> createBlogPost(@RequestBody BlogPostDTO blogPostDTO) {
+      BlogPost blogPost = new BlogPost(blogPostDTO);
+      BlogPostDTO createdBlogPostDTO = blogPostService.createBlogPost(blogPost);
+      return new ResponseEntity<>(createdBlogPostDTO, HttpStatus.CREATED);
+   }
+   /**
+    * Retrieves a blog post by its ID.
+    *
+    * @param id the UUID of the blog post
+    * @return a ResponseEntity containing the blog post DTO and HTTP status OK,
+    *         or HTTP status NOT FOUND if the blog post does not exist
+    */
+   @GetMapping("/{id}")
+   public ResponseEntity<BlogPostDTO> getBlogPostById(@PathVariable UUID id) {
+      return blogPostService.findBlogPostById(id)
+         .map(blogPostDTO -> new ResponseEntity<>(blogPostDTO, HttpStatus.OK))
+         .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
    }
 
+   /**
+    * Retrieves all blog posts.
+    *
+    * @return a ResponseEntity containing a list of all blog post DTOs and HTTP status OK
+    */
+   @GetMapping
+   public ResponseEntity<List<BlogPostDTO>> getAllBlogPosts() {
+      List<BlogPostDTO> blogPosts = blogPostService.findAllBlogPosts();
+      return new ResponseEntity<>(blogPosts, HttpStatus.OK);
+   }
+
+   /**
+    * Updates an existing blog post.
+    *
+    * @param id the UUID of the blog post to update
+    * @param blogPostDTO the updated blog post data transfer object
+    * @return a ResponseEntity containing the updated blog post DTO and HTTP status OK,
+    *         or HTTP status NOT FOUND if the blog post does not exist
+    */
    @PutMapping("/{id}")
-   public BlogPost updateBlogPost(@PathVariable Long id, @RequestBody BlogPost blogPost) {
-      BlogPost existingPost = blogPostRepository.findById(id).orElse(null);
-      if (existingPost != null) {
-         existingPost.setTitle(blogPost.getTitle());
-         existingPost.setContent(blogPost.getContent());
-         return blogPostRepository.save(existingPost);
-      }
-      return null;
+   public ResponseEntity<BlogPostDTO> updateBlogPost(@PathVariable UUID id, @RequestBody BlogPostDTO blogPostDTO) {
+      BlogPost blogPost = new BlogPost(blogPostDTO);
+      return blogPostService.updateBlogPost(id, blogPost)
+         .map(updatedBlogPostDTO -> new ResponseEntity<>(updatedBlogPostDTO, HttpStatus.OK))
+         .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+   }
+   /**
+    * Deletes a blog post by its ID.
+    *
+    * @param id the UUID of the blog post to delete
+    * @return a ResponseEntity with HTTP status NO_CONTENT if the blog post was deleted,
+    *         or HTTP status NOT FOUND if the blog post does not exist
+    */
+   @DeleteMapping("/{id}")
+   public ResponseEntity<Void> deleteBlogPost(@PathVariable UUID id) {
+      boolean deleted = blogPostService.deleteBlogPost(id);
+      return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
    }
 
-   @DeleteMapping("/{id}")
-   public void deleteBlogPost(@PathVariable Long id) {
-      blogPostRepository.deleteById(id);
-   }
 }
