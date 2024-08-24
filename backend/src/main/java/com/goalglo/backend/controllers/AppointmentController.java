@@ -1,10 +1,15 @@
 package com.goalglo.backend.controllers;
 
+import com.goalglo.backend.common.ResourceNotFoundException;
 import com.goalglo.backend.dto.AppointmentDTO;
+import com.goalglo.backend.dto.TimeSlotDTO;
 import com.goalglo.backend.services.AppointmentService;
+import com.goalglo.backend.services.TimeSlotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,21 +20,29 @@ import java.util.UUID;
 public class AppointmentController {
 
    private final AppointmentService appointmentService;
+   private final TimeSlotService timeSlotService;
+
 
    @Autowired
-   public AppointmentController(AppointmentService appointmentService) {
+   public AppointmentController(AppointmentService appointmentService, TimeSlotService timeSlotService) {
       this.appointmentService = appointmentService;
+      this.timeSlotService = timeSlotService;
    }
 
    /**
-    * Creates a new appointment.
+    * Books an appointment and assigns a time slot.
     *
-    * @param appointment The appointment to be created.
-    * @return A ResponseEntity containing the created appointment DTO and HTTP status CREATED.
+    * @param appointmentDTO The DTO containing appointment details.
+    * @param timeSlotId     The UUID of the time slot to be booked.
+    * @param authentication The authentication object to get the logged-in user, if any.
+    * @return The created AppointmentDTO.
     */
-   @PostMapping
-   public ResponseEntity<AppointmentDTO> createAppointment(@RequestBody AppointmentDTO appointmentDTO) {
-      AppointmentDTO createdAppointment = appointmentService.createAppointment(appointmentDTO);
+   @PostMapping("/book-appointment/{timeSlotId}")
+   public ResponseEntity<AppointmentDTO> bookAppointment(@RequestBody AppointmentDTO appointmentDTO,
+                                                         @PathVariable UUID timeSlotId,
+                                                         Authentication authentication) {
+      UserDetails userDetails = (authentication != null) ? (UserDetails) authentication.getPrincipal() : null;
+      AppointmentDTO createdAppointment = appointmentService.bookAppointment(appointmentDTO, timeSlotId, userDetails);
       return new ResponseEntity<>(createdAppointment, HttpStatus.CREATED);
    }
 
@@ -48,14 +61,14 @@ public class AppointmentController {
 
 
    /**
-    * Retrieves all appointments associated with a specific client.
+    * Retrieves all appointments associated with a specific user.
     *
-    * @param clientId The UUID of the client whose appointments to retrieve.
+    * @param userId The UUID of the user whose appointments to retrieve.
     * @return A ResponseEntity containing a list of appointment DTOs and HTTP status OK.
     */
-   @GetMapping("/client/{clientId}")
-   public ResponseEntity<List<AppointmentDTO>> getAppointmentsByClientId(@PathVariable UUID clientId) {
-      List<AppointmentDTO> appointments = appointmentService.findAppointmentsByClientId(clientId);
+   @GetMapping("/user/{userId}")
+   public ResponseEntity<List<AppointmentDTO>> getAppointmentsByUserId(@PathVariable UUID userId) {
+      List<AppointmentDTO> appointments = appointmentService.findAppointmentsByUserId(userId);
       return new ResponseEntity<>(appointments, HttpStatus.OK);
    }
 
@@ -84,6 +97,33 @@ public class AppointmentController {
    public ResponseEntity<Void> deleteAppointment(@PathVariable UUID id) {
       boolean deleted = appointmentService.deleteAppointment(id);
       return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+   }
+
+   /**
+    * Cancels a booking for a specific time slot.
+    *
+    * @param slotId The UUID of the time slot to cancel the booking for.
+    * @return A ResponseEntity with HTTP status NO_CONTENT if successful, or NOT_FOUND if the slot doesn't exist.
+    */
+   @DeleteMapping("/slots/{slotId}/cancel")
+   public ResponseEntity<Void> cancelBooking(@PathVariable UUID slotId) {
+      try {
+         timeSlotService.cancelBooking(slotId);
+         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+      } catch (ResourceNotFoundException e) {
+         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+      }
+   }
+
+   /**
+    * Retrieves all available time slots.
+    *
+    * @return A ResponseEntity containing a list of available TimeSlotDTOs and HTTP status OK.
+    */
+   @GetMapping("/slots/available")
+   public ResponseEntity<List<TimeSlotDTO>> getAvailableSlots() {
+      List<TimeSlotDTO> availableSlots = timeSlotService.getAvailableSlots();
+      return new ResponseEntity<>(availableSlots, HttpStatus.OK);
    }
 
 }

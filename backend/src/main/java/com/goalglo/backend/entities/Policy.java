@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -20,8 +19,8 @@ public class Policy {
    private UUID id;
 
    @ManyToOne(fetch = FetchType.LAZY)
-   @JoinColumn(name = "client_id", nullable = false)
-   private Client client;
+   @JoinColumn(name = "user_id", nullable = false)
+   private User user;
 
    @Column(nullable = false, unique = true)
    private String policyNumber;
@@ -30,10 +29,10 @@ public class Policy {
    private String policyType;
 
    @Column(nullable = false)
-   private BigDecimal premiumAmount;
+   private double premiumAmount;
 
    @Column(nullable = false)
-   private BigDecimal coverageAmount;
+   private double coverageAmount;
 
    @Column(nullable = false)
    private LocalDate startDate;
@@ -56,6 +55,8 @@ public class Policy {
       this.policyType = policyDTO.getPolicyType();
       this.premiumAmount = policyDTO.getPremiumAmount();
       this.coverageAmount = policyDTO.getCoverageAmount();
+      this.startDate = policyDTO.getStartDate();
+      this.endDate = policyDTO.getEndDate();
    }
    public Policy() {
    }

@@ -85,4 +85,15 @@ public class ServiceService {
       return false;
    }
 
+   /**
+    * Creates multiple services from the provided list of service DTOs.
+    *
+    * @param services A list of ServiceDTO objects to be converted into Service entities and saved in the database.
+    */
+   public void bulkCreateServices(List<ServiceDTO> services) {
+      for (ServiceDTO serviceDTO : services) {
+         ServiceEntity service = new ServiceEntity(serviceDTO);
+         serviceRepository.save(service);
+      }
+   }
 }

@@ -7,6 +7,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.Set;
 
 @Component
 public class JwtTokenUtil {
@@ -17,7 +18,7 @@ public class JwtTokenUtil {
       this.jwtEncoder = jwtEncoder;
    }
 
-   public String generateJwtToken(String subject, String role, long tokenValidity) {
+   public String generateJwtToken(String subject, Set<String> roles, long tokenValidity) {
       Instant now = Instant.now();
 
       // Set the JWT claims and ensure HS256 algorithm is applied
@@ -26,7 +27,7 @@ public class JwtTokenUtil {
          .issuedAt(now)
          .expiresAt(now.plusSeconds(tokenValidity))
          .subject(subject)
-         .claim("role", role)
+         .claim("roles", roles)
          .build();
       JwsHeader jwsHeader = JwsHeader.with(() -> "HS512").type("JWT").build();
       return jwtEncoder.encode(JwtEncoderParameters.from(jwsHeader, claimsSet)).getTokenValue();

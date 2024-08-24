@@ -1,9 +1,15 @@
 package com.goalglo.backend.services;
 
+import com.goalglo.backend.common.ResourceNotFoundException;
 import com.goalglo.backend.dto.AppointmentDTO;
 import com.goalglo.backend.entities.Appointment;
+import com.goalglo.backend.entities.ServiceEntity;
+import com.goalglo.backend.entities.TimeSlot;
+import com.goalglo.backend.entities.User;
 import com.goalglo.backend.repositories.AppointmentRepository;
+import com.goalglo.backend.repositories.ServiceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,22 +21,71 @@ import java.util.stream.Collectors;
 public class AppointmentService {
 
    private final AppointmentRepository appointmentRepository;
+   private final TimeSlotService timeSlotService;
+   private final UserService userService;
+   private final ServiceRepository serviceRepository;
+
+
+
 
    @Autowired
-   public AppointmentService(AppointmentRepository appointmentRepository) {
+   public AppointmentService(AppointmentRepository appointmentRepository, TimeSlotService timeSlotService, UserService userService, ServiceRepository serviceRepository) {
       this.appointmentRepository = appointmentRepository;
+      this.timeSlotService = timeSlotService;
+      this.userService = userService;
+      this.serviceRepository = serviceRepository;
+
+
    }
 
    /**
-    * Creates a new appointment and saves it to the repository.
+    * Creates a new appointment and books a time slot.
     *
-    * @param appointment The appointment to be created.
-    * @return The created appointment.
+    * @param appointmentDTO The DTO object containing the appointment details.
+    * @param timeSlotId     The UUID of the time slot to be booked.
+    * @param userDetails    The logged-in user's details, if available.
+    * @return The created AppointmentDTO.
     */
-   public AppointmentDTO createAppointment(AppointmentDTO appointmentDTO) {
+   public AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO, UUID timeSlotId, UserDetails userDetails) {
+      // Check if the time slot is available
+      TimeSlot timeSlot = timeSlotService.findTimeSlotById(timeSlotId)
+         .orElseThrow(() -> new ResourceNotFoundException("TimeSlot not found"));
+
+      if (timeSlot.isBooked()) {
+         throw new IllegalStateException("Time slot is already booked");
+      }
+
+      User user;
+      if (userDetails != null) {
+         // Find the logged-in user
+         user = userService.findByUsernameOrEmail(userDetails.getUsername());
+      } else {
+         // Handle non-logged-in users by finding or creating a user by email
+         user = userService.findOrCreateUserByEmail(appointmentDTO.getEmail(), appointmentDTO);
+      }
+
+      // Create the appointment and link it to the user and time slot
       Appointment appointment = new Appointment(appointmentDTO);
-      return new AppointmentDTO(appointmentRepository.save(appointment));
+      appointment.setUser(user);
+      appointment.setTimeSlot(timeSlot);
+
+      // Set the service entity if available in the DTO
+      if (appointmentDTO.getServiceId() != null) {
+         ServiceEntity service = serviceRepository.findById(appointmentDTO.getServiceId())
+            .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
+         appointment.setService(service);
+      }
+
+      // Save the appointment
+      appointment = appointmentRepository.save(appointment);
+
+      // Mark the time slot as booked
+      timeSlotService.bookSlot(timeSlotId, appointment);
+
+      return new AppointmentDTO(appointment);
    }
+
+
    /**
     * Finds an appointment by its UUID.
     *
@@ -41,16 +96,17 @@ public class AppointmentService {
       return appointmentRepository.findById(id).map(AppointmentDTO::new);
    }
    /**
-    * Finds all appointments associated with a specific client.
+    * Finds all appointments associated with a specific user.
     *
-    * @param clientId The UUID of the client.
-    * @return A list of appointments associated with the client.
+    * @param userId The UUID of the user.
+    * @return A list of appointments associated with the user.
     */
-   public List<AppointmentDTO> findAppointmentsByClientId(UUID clientId) {
-      return appointmentRepository.findByClientId(clientId).stream()
+   public List<AppointmentDTO> findAppointmentsByUserId(UUID userId) {
+      return appointmentRepository.findByUserId(userId).stream()
          .map(AppointmentDTO::new)
          .collect(Collectors.toList());
    }
+
 
    /**
     * Updates an existing appointment with new information.
@@ -61,10 +117,31 @@ public class AppointmentService {
     */
    public Optional<AppointmentDTO> updateAppointment(UUID id, AppointmentDTO appointmentDTO) {
       return appointmentRepository.findById(id).map(existingAppointment -> {
-         existingAppointment.setDate(appointmentDTO.getDate());
-         existingAppointment.setStatus(appointmentDTO.getStatus());
-         existingAppointment.setNotes(appointmentDTO.getNotes());
-         return new AppointmentDTO(appointmentRepository.save(existingAppointment));
+         // Update the service if it's provided
+         if (appointmentDTO.getServiceId() != null) {
+            ServiceEntity service = serviceRepository.findById(appointmentDTO.getServiceId())
+               .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
+            existingAppointment.setService(service);
+         }
+
+         // Sync start and end times with the provided time slot, if available
+         if (appointmentDTO.getTimeSlotId() != null) {
+            TimeSlot timeSlot = timeSlotService.findTimeSlotById(appointmentDTO.getTimeSlotId())
+               .orElseThrow(() -> new ResourceNotFoundException("TimeSlot not found"));
+            existingAppointment.setTimeSlot(timeSlot);
+         }
+
+         // Update status, notes, etc., if provided
+         if (appointmentDTO.getStatus() != null) {
+            existingAppointment.setStatus(appointmentDTO.getStatus());
+         }
+         if (appointmentDTO.getNotes() != null) {
+            existingAppointment.setNotes(appointmentDTO.getNotes());
+         }
+
+         // Save and return the updated appointment
+         Appointment updatedAppointment = appointmentRepository.save(existingAppointment);
+         return new AppointmentDTO(updatedAppointment);
       });
    }
 

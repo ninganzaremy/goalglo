@@ -17,22 +17,22 @@ import javax.crypto.spec.SecretKeySpec;
 @Configuration
 public class JwtConfig {
 
-   private final SecreteConfig secreteConfig;
+   private final SecretConfig secretConfig;
 
-   public JwtConfig(SecreteConfig secreteConfig) {
-      this.secreteConfig = secreteConfig;
+   public JwtConfig(SecretConfig secretConfig) {
+      this.secretConfig = secretConfig;
    }
 
    @Bean
    public JwtEncoder jwtEncoder() {
-      SecretKey key = new SecretKeySpec(secreteConfig.getJwtSecret().getBytes(), "HmacSHA512");
+      SecretKey key = new SecretKeySpec(secretConfig.getJwtSecret().getBytes(), "HmacSHA512");
       JWKSource<SecurityContext> immutableSecret = new ImmutableSecret<>(key);
       return new NimbusJwtEncoder(immutableSecret);
    }
 
    @Bean
    public JwtDecoder jwtDecoder() {
-      return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secreteConfig.getJwtSecret().getBytes(), "HmacSHA512")).build();
+      return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secretConfig.getJwtSecret().getBytes(), "HmacSHA512")).build();
    }
 
 }

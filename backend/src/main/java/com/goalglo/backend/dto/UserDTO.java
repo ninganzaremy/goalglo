@@ -13,10 +13,13 @@ import java.util.UUID;
 public class UserDTO {
 
    private UUID id;
+   private String firstName;
+   private String lastName;
+   private String phoneNumber;
+   private String address;
    private String email;
    private String password;
    private String username;
-   private String role;
    private String token;
    private boolean emailVerified = false;
 
@@ -24,8 +27,11 @@ public class UserDTO {
    public UserDTO(User user) {
       this.id = user.getId();
       this.username = user.getUsername();
+      this.firstName = user.getFirstName();
+      this.lastName = user.getLastName();
       this.email = user.getEmail();
-      this.role = user.getRole();
+      this.phoneNumber = user.getPhoneNumber();
+      this.address = user.getAddress();
       this.emailVerified = user.isEmailVerified();
       this.password = user.getPassword();
    }

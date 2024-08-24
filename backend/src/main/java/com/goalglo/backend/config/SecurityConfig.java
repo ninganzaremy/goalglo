@@ -10,7 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,7 +22,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -29,11 +33,11 @@ import java.util.List;
 public class SecurityConfig {
 
    private final UserRepository userRepository;
-   private final SecreteConfig secreteConfig;
+   private final SecretConfig secretConfig;
 
-   public SecurityConfig(UserRepository userRepository, SecreteConfig secreteConfig) {
+   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig) {
       this.userRepository = userRepository;
-      this.secreteConfig = secreteConfig;
+      this.secretConfig = secretConfig;
    }
 
    @Bean
@@ -41,10 +45,10 @@ public class SecurityConfig {
       http
          .csrf(AbstractHttpConfigurer::disable)
          .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
-            authorizationManagerRequestMatcherRegistry.requestMatchers(HttpMethod.DELETE).hasRole(secreteConfig.getSecuredRole())
-               .requestMatchers("/api/admin-actions/**").hasAnyRole(secreteConfig.getSecuredRole())
-               .requestMatchers("/user/**").hasAnyRole(secreteConfig.getPublicRole(), secreteConfig.getSecuredRole())
-               .requestMatchers("/login", "/register").permitAll()
+            authorizationManagerRequestMatcherRegistry.requestMatchers(HttpMethod.DELETE).hasRole(secretConfig.getSecuredRole())
+               .requestMatchers("/api/admin-actions/**").hasAnyAuthority(secretConfig.getSecuredRole())
+               .requestMatchers("/user/**").hasAnyAuthority(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
+               .requestMatchers("/**").permitAll()
                .anyRequest().authenticated())
          .httpBasic(Customizer.withDefaults())
          .oauth2ResourceServer(oauth2 -> oauth2
@@ -54,7 +58,13 @@ public class SecurityConfig {
          )
          .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-         );
+         )
+         .logout(logout -> logout
+            .logoutUrl("/logout")
+            .logoutSuccessUrl("/")
+            .invalidateHttpSession(true)
+            .deleteCookies("JSESSIONID")
+            .permitAll());
 
       return http.build();
    }
@@ -62,7 +72,7 @@ public class SecurityConfig {
    @Bean
    CorsConfigurationSource corsConfigurationSource() {
       CorsConfiguration configuration = new CorsConfiguration();
-      configuration.setAllowedOrigins(List.of(secreteConfig.getDomain()));
+      configuration.setAllowedOrigins(List.of(secretConfig.getDomain()));
       configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
       configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
 
@@ -80,13 +90,20 @@ public class SecurityConfig {
 
    @Bean
    public UserDetailsService userDetailsService() {
-      return username -> userRepository.findByUsername(username)
-         .map(user -> User.builder()
-            .username(user.getUsername())
-            .password(user.getPassword())
-            .roles(user.getRole())
-            .build()
-         )
+      return identifier -> userRepository.findByEmailOrUsername(identifier, identifier)
+         .map(user -> {
+            Set<GrantedAuthority> authorities = user.getRoles() != null
+               ? user.getRoles().stream()
+               .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+               .collect(Collectors.toSet())
+               : new HashSet<>();
+
+            return org.springframework.security.core.userdetails.User.builder()
+               .username(user.getUsername())
+               .password(user.getPassword())
+               .authorities(authorities)
+               .build();
+         })
          .orElseThrow(() -> new UsernameNotFoundException("User not found"));
    }
 
@@ -100,5 +117,6 @@ public class SecurityConfig {
       jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
       return jwtAuthenticationConverter;
    }
+
 
 }

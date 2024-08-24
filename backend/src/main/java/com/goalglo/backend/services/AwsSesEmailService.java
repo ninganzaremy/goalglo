@@ -1,6 +1,6 @@
 package com.goalglo.backend.services;
 
-import com.goalglo.backend.config.SecreteConfig;
+import com.goalglo.backend.config.SecretConfig;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.*;
@@ -9,11 +9,11 @@ import software.amazon.awssdk.services.ses.model.*;
 public class AwsSesEmailService {
 
    private final SesClient sesClient;
-   private final SecreteConfig secreteConfig;
+   private final SecretConfig secretConfig;
 
-   public AwsSesEmailService(SesClient sesClient, SecreteConfig secreteConfig) {
+   public AwsSesEmailService(SesClient sesClient, SecretConfig secretConfig) {
       this.sesClient = sesClient;
-      this.secreteConfig = secreteConfig;
+      this.secretConfig = secretConfig;
    }
 
    /**
@@ -30,7 +30,7 @@ public class AwsSesEmailService {
             .subject(Content.builder().data(subject).build())
             .body(Body.builder().text(Content.builder().data(body).build()).build())
             .build())
-         .source(secreteConfig.getAwsSesEmail())
+         .source(secretConfig.getAwsSesEmail())
          .build();
 
       sesClient.sendEmail(emailRequest);

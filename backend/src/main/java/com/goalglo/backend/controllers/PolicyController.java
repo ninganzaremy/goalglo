@@ -73,14 +73,14 @@ public class PolicyController {
 
 
    /**
-    * Retrieves all policies by a client ID.
+    * Retrieves all policies by a user ID.
     *
-    * @param clientId The UUID of the client.
-    * @return A list of policies associated with the client.
+    * @param userId The UUID of the user.
+    * @return A list of policies associated with the user.
     */
-   @GetMapping("/client/{clientId}")
-   public ResponseEntity<List<PolicyDTO>> getPoliciesByClientId(@PathVariable UUID clientId) {
-      List<PolicyDTO> policies = policyService.findPoliciesByClientId(clientId);
+   @GetMapping("/user/{userId}")
+   public ResponseEntity<List<PolicyDTO>> getPoliciesByUserId(@PathVariable UUID userId) {
+      List<PolicyDTO> policies = policyService.findPoliciesByUserId(userId);
       return new ResponseEntity<>(policies, HttpStatus.OK);
    }
 
