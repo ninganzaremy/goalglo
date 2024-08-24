@@ -2,7 +2,7 @@ package com.goalglo.backend.services;
 
 import com.goalglo.backend.common.ResourceNotFoundException;
 import com.goalglo.backend.common.TokenCommons;
-import com.goalglo.backend.config.SecreteConfig;
+import com.goalglo.backend.config.SecretConfig;
 import com.goalglo.backend.entities.EmailVerificationToken;
 import com.goalglo.backend.entities.User;
 import com.goalglo.backend.repositories.EmailVerificationTokenRepository;
@@ -23,18 +23,18 @@ public class PasswordResetService {
    private final AwsSesEmailService awsSesEmailService;
    private final PasswordEncoder passwordEncoder;
    private final UuidTokenService uuidTokenService;
-   private final SecreteConfig secreteConfig;
+   private final SecretConfig secretConfig;
 
 
    @Autowired
-   public PasswordResetService(UserRepository userRepository, EmailVerificationTokenRepository emailVerificationTokenRepository, EmailTemplateService emailTemplateService, AwsSesEmailService awsSesEmailService, PasswordEncoder passwordEncoder, UuidTokenService uuidTokenService, SecreteConfig secreteConfig) {
+   public PasswordResetService(UserRepository userRepository, EmailVerificationTokenRepository emailVerificationTokenRepository, EmailTemplateService emailTemplateService, AwsSesEmailService awsSesEmailService, PasswordEncoder passwordEncoder, UuidTokenService uuidTokenService, SecretConfig secretConfig) {
       this.userRepository = userRepository;
       this.emailVerificationTokenRepository = emailVerificationTokenRepository;
       this.emailTemplateService = emailTemplateService;
       this.awsSesEmailService = awsSesEmailService;
       this.passwordEncoder = passwordEncoder;
       this.uuidTokenService = uuidTokenService;
-      this.secreteConfig = secreteConfig;
+      this.secretConfig = secretConfig;
    }
    /**
     * Initiates the password reset process by generating a password reset token and sending a password reset email.
@@ -60,12 +60,12 @@ public class PasswordResetService {
     * @param token The password reset token generated for the user.
     */
    private void sendPasswordResetEmail(User user, String token) {
-      String passwordResetEmailTemplate = secreteConfig.getPasswordResetEmailTemplate();
-      String domain = secreteConfig.getDomain();
+      String passwordResetEmailTemplate = secretConfig.getPasswordResetEmailTemplate();
+      String domain = secretConfig.getDomain();
 
       String subject = emailTemplateService.getSubjectByTemplateName(passwordResetEmailTemplate);
       String body = emailTemplateService.getBodyByTemplateName(passwordResetEmailTemplate)
-         .replace("{resetUrl}", domain +"/reset-password?token=" + token);
+         .replace("{reset_url}", domain + "/reset-password?token=" + token);
 
       awsSesEmailService.sendEmail(user.getEmail(), subject, body);
    }

@@ -21,18 +21,19 @@ public class Appointment {
    private UUID id;
 
    @ManyToOne
-   @JoinColumn(name = "client_id", nullable = false)
-   private Client client;
+   @JoinColumn(name = "user_id", nullable = false)
+   private User user;
+
+   @ManyToOne(fetch = FetchType.LAZY)
+   @JoinColumn(name = "time_slot_id", nullable = false)
+   private TimeSlot timeSlot;
 
    @ManyToOne
    @JoinColumn(name = "service_id", nullable = true)
    private ServiceEntity service;
 
    @Column(nullable = false)
-   private LocalDateTime date;
-
-   @Column(nullable = false)
-   private String status;
+   private String status = "Pending";
 
    @Column(columnDefinition = "TEXT")
    private String notes;
@@ -43,11 +44,26 @@ public class Appointment {
    @UpdateTimestamp
    private LocalDateTime updatedAt;
 
+   @Column(nullable = false)
+   private LocalDateTime startTime;
+
+   @Column(nullable = false)
+   private LocalDateTime endTime;
+
    public Appointment(AppointmentDTO appointmentDTO) {
-      this.date = appointmentDTO.getDate();
-      this.status = appointmentDTO.getStatus();
+      this.status = appointmentDTO.getStatus() != null ? appointmentDTO.getStatus() : "Pending";
       this.notes = appointmentDTO.getNotes();
    }
+
+   @PrePersist
+   @PreUpdate
+   private void syncTimesWithTimeSlot() {
+      if (this.timeSlot != null) {
+         this.startTime = this.timeSlot.getStartTime();
+         this.endTime = this.timeSlot.getEndTime();
+      }
+   }
+
    public Appointment() {
    }
 }

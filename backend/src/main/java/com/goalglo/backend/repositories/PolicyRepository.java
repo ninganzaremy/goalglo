@@ -14,12 +14,12 @@ import java.util.UUID;
 public interface PolicyRepository extends JpaRepository<Policy, UUID> {
 
    /**
-    * Finds all policies by a specific client ID.
+    * Finds all policies by a specific userId ID.
     *
-    * @param clientId The UUID of the client.
-    * @return A list of policies associated with the client.
+    * @param userId The UUID of the userId.
+    * @return A list of policies associated with the user.
     */
-   List<Policy> findByClientId(UUID clientId);
+   List<Policy> findByUserId(UUID userId);
 
    /**
     * Finds a policy by its unique policy number.

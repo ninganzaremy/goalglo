@@ -5,7 +5,10 @@ import com.goalglo.backend.services.ServiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,17 +22,6 @@ public class ServiceController {
    @Autowired
    public ServiceController(ServiceService serviceService) {
       this.serviceService = serviceService;
-   }
-
-   /**
-    * Creates a new service.
-    *
-    * @param serviceDTO The service data to create.
-    * @return The created service.
-    */
-   @PostMapping
-   public ResponseEntity<ServiceDTO> createService(@RequestBody ServiceDTO serviceDTO) {
-      return new ResponseEntity<>(serviceService.createService(serviceDTO), HttpStatus.CREATED);
    }
 
 
@@ -55,32 +47,4 @@ public class ServiceController {
    public ResponseEntity<List<ServiceDTO>> getAllServices() {
       return new ResponseEntity<>(serviceService.findAllServices(), HttpStatus.OK);
    }
-
-
-   /**
-    * Updates an existing service by its ID.
-    *
-    * @param id The UUID of the service.
-    * @param serviceDTO The service data to update.
-    * @return The updated service data if the update is successful.
-    */
-   @PutMapping("/{id}")
-   public ResponseEntity<ServiceDTO> updateService(@PathVariable UUID id, @RequestBody ServiceDTO serviceDTO) {
-      return serviceService.updateService(id, serviceDTO)
-         .map(updatedService -> new ResponseEntity<>(updatedService, HttpStatus.OK))
-         .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-   }
-   /**
-    * Deletes a service by its ID.
-    *
-    * @param id The UUID of the service.
-    * @return A response indicating the result of the delete operation.
-    */
-   @DeleteMapping("/{id}")
-   public ResponseEntity<Void> deleteService(@PathVariable UUID id) {
-      boolean deleted = serviceService.deleteService(id);
-      return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
-   }
-
-
 }

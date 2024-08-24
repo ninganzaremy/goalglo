@@ -71,16 +71,17 @@ public class PolicyService {
    }
 
    /**
-    * Finds policies by a client ID.
+    * Finds policies by a user ID.
     *
-    * @param clientId The UUID of the client.
-    * @return A list of policies associated with the client.
+    * @param userId The UUID of the user.
+    * @return A list of policies associated with the user.
     */
-   public List<PolicyDTO> findPoliciesByClientId(UUID clientId) {
-      return policyRepository.findByClientId(clientId).stream()
+   public List<PolicyDTO> findPoliciesByUserId(UUID userId) {
+      return policyRepository.findByUserId(userId).stream()
          .map(PolicyDTO::new)
          .collect(Collectors.toList());
    }
+
    /**
     * Finds a policy by its unique policy number.
     *

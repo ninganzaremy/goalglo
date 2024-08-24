@@ -10,20 +10,20 @@ import software.amazon.awssdk.services.ses.SesClient;
 @Configuration
 public class AwsSesConfig {
 
-   private final SecreteConfig secreteConfig;
+   private final SecretConfig secretConfig;
 
-   public AwsSesConfig(SecreteConfig secreteConfig) {
-      this.secreteConfig = secreteConfig;
+   public AwsSesConfig(SecretConfig secretConfig) {
+      this.secretConfig = secretConfig;
    }
 
 
    @Bean
    public SesClient sesClient() {
-      AwsBasicCredentials awsCreds = AwsBasicCredentials.create(secreteConfig.getAccessKeyId(), secreteConfig.getSecretAccessKey());
+      AwsBasicCredentials awsCreds = AwsBasicCredentials.create(secretConfig.getAccessKeyId(), secretConfig.getSecretAccessKey());
 
       return SesClient.builder()
          .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
-         .region(Region.of(secreteConfig.getRegion()))
+         .region(Region.of(secretConfig.getRegion()))
          .build();
    }
 }
