@@ -41,7 +41,7 @@ public class TimeSlotService {
     *
     * @param slotId      The UUID of the time slot to be booked.
     * @param appointment The appointment to associate with the booked time slot.
-    * @throws ResourceNotFoundException if the time slot is not found.
+    * @throws ResourceNotFoundException  if the time slot is not found.
     */
    public void bookSlot(UUID slotId, Appointment appointment) {
       timeSlotRepository.findById(slotId).map(slot -> {

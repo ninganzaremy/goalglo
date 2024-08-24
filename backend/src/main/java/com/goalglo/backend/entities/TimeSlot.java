@@ -45,7 +45,6 @@ public class TimeSlot {
 
    @UpdateTimestamp
    private LocalDateTime updatedAt;
-
    public TimeSlot(TimeSlotDTO timeSlotDTO) {
       this.startTime = timeSlotDTO.getStartTime();
       this.endTime = timeSlotDTO.getEndTime();
