@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -45,8 +46,9 @@ public class SecurityConfig {
       http
          .csrf(AbstractHttpConfigurer::disable)
          .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
-            authorizationManagerRequestMatcherRegistry.requestMatchers(HttpMethod.DELETE).hasRole(secretConfig.getSecuredRole())
-               .requestMatchers("/api/admin-actions/**").hasAnyAuthority(secretConfig.getSecuredRole())
+            authorizationManagerRequestMatcherRegistry
+               .requestMatchers(HttpMethod.DELETE).hasAuthority(secretConfig.getSecuredRole())
+               .requestMatchers("/api/admin-actions/**").hasAuthority(secretConfig.getSecuredRole())
                .requestMatchers("/user/**").hasAnyAuthority(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
                .requestMatchers("/**").permitAll()
                .anyRequest().authenticated())
@@ -98,7 +100,7 @@ public class SecurityConfig {
                .collect(Collectors.toSet())
                : new HashSet<>();
 
-            return org.springframework.security.core.userdetails.User.builder()
+            return User.builder()
                .username(user.getUsername())
                .password(user.getPassword())
                .authorities(authorities)
@@ -117,6 +119,5 @@ public class SecurityConfig {
       jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
       return jwtAuthenticationConverter;
    }
-
 
 }

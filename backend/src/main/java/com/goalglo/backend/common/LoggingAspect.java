@@ -7,18 +7,11 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Aspect
 @Component
 public class LoggingAspect {
-
-   private final Environment env;
-
-   public LoggingAspect(Environment env) {
-      this.env = env;
-   }
 
    @Before("execution(* com.goalglo.backend..*(..))")
    public void logMethodEntry(JoinPoint joinPoint) {
@@ -44,16 +37,7 @@ public class LoggingAspect {
       if ("Exception".equals(action)) {
          log.error("Exception in method: {}() with cause = {}",methodName, ex != null && ex.getCause() != null ? ex.getCause() : "NULL");
       } else {
-         log.info("{}() : {} with {} = {}", methodName, action, action.equals("Entering") ? "arguments" : "result", filterSensitiveInfo(className, obj));
+         log.info("{}() : {} with {} = {}", methodName, action, action.equals("Entering") ? "arguments" : "result", obj);
       }
-   }
-
-   private Object filterSensitiveInfo(String className, Object obj) {
-      String activeProfile = env.getProperty("spring.profiles.active");
-      if (!"dev".equals(activeProfile) &&
-         (className.equals("UserController") || className.equals("UserRepository") || className.equals("UserService"))) {
-         return "*****";
-      }
-      return obj;
    }
 }
