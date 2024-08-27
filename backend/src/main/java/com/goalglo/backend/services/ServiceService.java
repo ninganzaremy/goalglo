@@ -96,4 +96,8 @@ public class ServiceService {
          serviceRepository.save(service);
       }
    }
+
+   public Optional<ServiceEntity> findById(UUID serviceId) {
+      return serviceRepository.findById(serviceId);
+   }
 }
