@@ -112,7 +112,6 @@ public class AppointmentService {
     * Updates an existing appointment with new information.
     *
     * @param id                The UUID of the appointment to update.
-    * @param updatedAppointment The updated appointment information.
     * @return An Optional containing the updated appointment if found and updated, or an empty Optional if not.
     */
    public Optional<AppointmentDTO> updateAppointment(UUID id, AppointmentDTO appointmentDTO) {

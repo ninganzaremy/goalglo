@@ -43,8 +43,8 @@ public class UserService {
    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, EmailVerificationTokenRepository emailVerificationTokenRepository, EmailTemplateService emailTemplateService, AwsSesEmailService awsSesEmailService, UuidTokenService uuidTokenService, SecretConfig secretConfig, JwtTokenUtil jwtTokenUtil, RoleRepository roleRepository) {
       this.userRepository = userRepository;
       this.passwordEncoder = passwordEncoder;
-      this.emailTemplateService = emailTemplateService;
       this.emailVerificationTokenRepository = emailVerificationTokenRepository;
+      this.emailTemplateService = emailTemplateService;
       this.awsSesEmailService = awsSesEmailService;
       this.uuidTokenService = uuidTokenService;
       this.secretConfig = secretConfig;
@@ -147,11 +147,7 @@ public class UserService {
     * @return An Optional containing the UserDTO with a token if the login is successful, or an empty Optional if not.
     */
    public Optional<UserDTO> loginUser(String identifier, String password) {
-      Optional<User> userOpt = userRepository.findByEmail(identifier);
-
-      if (userOpt.isEmpty()) {
-         userOpt = userRepository.findByUsername(identifier);
-      }
+      Optional<User> userOpt = userRepository.findByEmailOrUsername(identifier, identifier);
 
       if (userOpt.isPresent()) {
          User user = userOpt.get();
@@ -320,6 +316,10 @@ public class UserService {
       User updatedUser = userRepository.save(user);
 
       return new UserDTO(updatedUser);
+   }
+
+   public Optional<User> findById(UUID userId) {
+      return userRepository.findById(userId);
    }
 
 }
