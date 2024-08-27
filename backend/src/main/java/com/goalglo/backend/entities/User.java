@@ -31,6 +31,9 @@ public class User {
    @Column(nullable = false)
    private String firstName;
 
+   @Column()
+   private String stripeCustomerId;
+
    @Column(nullable = false)
    private String lastName;
 

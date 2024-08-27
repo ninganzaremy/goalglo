@@ -1,26 +1,25 @@
 package com.goalglo.backend.config;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@Configuration
+@Component
 public class SecretConfig {
+   private final Environment environment;
+
+   @Value("${stripe.endpoint.secret}")
+   private String stripeEndpointSecret;
 
    @Value("${DEV_DOMAIN}")
    private String devDomain;
 
    @Value("${PROD_DOMAIN}")
    private String prodDomain;
-
-   @Value("${spring.profiles.active}")
-   private String activeProfile;
 
    @Value("${obfuscation.secured_role}")
    private String securedRole;
@@ -57,9 +56,15 @@ public class SecretConfig {
 
    @Value("${email.verification.email.template.name}")
    private String emailVerificationTemplate;
+   @Value("${stripe.api.key}")
+   private String stripeApiKey;
 
-   @Bean
-   public String getDomain() {
-      return activeProfile.equalsIgnoreCase("dev") ? devDomain : prodDomain;
+   public SecretConfig(Environment environment) {
+      this.environment = environment;
    }
+
+   public String getDomain() {
+      return "dev".equalsIgnoreCase(environment.getProperty("spring.profiles.active", "dev")) ? devDomain : prodDomain;
+   }
+
 }

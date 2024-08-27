@@ -25,7 +25,7 @@ public class Role {
    @Column(nullable = false, unique = true)
    private String name;
 
-   @ManyToMany(mappedBy = "roles")
+   @ManyToMany(mappedBy = "roles", fetch = FetchType.EAGER)
    private Set<User> users = new HashSet<>();
 
    public void addUser(User user) {
