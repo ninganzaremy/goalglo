@@ -14,7 +14,6 @@ import com.stripe.Stripe;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
-import com.stripe.net.Webhook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -106,10 +105,11 @@ public class PaymentService {
     * @return String   A confirmation message indicating the result of the webhook handling process.
     */
    public String handleStripeWebhook(String payload, String sigHeader) {
-      String stripeEndpointSecret = secretConfig.getStripeEndpointSecret();
 
       try {
-         Event event = Webhook.constructEvent(payload, sigHeader, stripeEndpointSecret);
+         String stripeEndpointSecret = secretConfig.getStripeEndpointSecret();
+
+         Event event = stripeWebhook.captureStripeEvent(payload, sigHeader, stripeEndpointSecret);
 
          // Handle different event types
          switch (event.getType()) {

@@ -1,7 +1,10 @@
 package com.goalglo.backend.hook;
 
+import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
+import com.stripe.net.Webhook;
 import com.stripe.param.PaymentIntentCancelParams;
 import com.stripe.param.PaymentIntentConfirmParams;
 import com.stripe.param.PaymentIntentCreateParams;
@@ -10,6 +13,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class StripeWebhook {
 
+   /**
+    * Captures the Stripe event from the webhook payload.
+    *
+    * @param payload              The JSON payload received from Stripe.
+    * @param sigHeader            The Stripe signature header used to verify the authenticity of the event.
+    * @param stripeEndpointSecret The endpoint secret to verify the signature.
+    * @return Event             The Stripe Event object parsed from the payload.
+    * @throws SignatureVerificationException If the signature verification fails.
+    */
+   public Event captureStripeEvent(String payload, String sigHeader, String stripeEndpointSecret) throws SignatureVerificationException {
+
+      return Webhook.constructEvent(payload, sigHeader, stripeEndpointSecret);
+   }
    /**
     * Creates a payment intent with Stripe for a specified amount and currency.
     *
