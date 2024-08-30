@@ -61,7 +61,7 @@ public class PasswordResetService {
     */
    private void sendPasswordResetEmail(User user, String token) {
       String passwordResetEmailTemplate = secretConfig.getPasswordResetEmailTemplate();
-      String domain = secretConfig.getDomain();
+      String domain = secretConfig.getActiveDomain();
 
       String subject = emailTemplateService.getSubjectByTemplateName(passwordResetEmailTemplate);
       String body = emailTemplateService.getBodyByTemplateName(passwordResetEmailTemplate)

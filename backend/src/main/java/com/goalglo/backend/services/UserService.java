@@ -109,7 +109,7 @@ public class UserService {
     */
    private void sendVerificationEmail(User user, String token) {
       String emailVerificationTemplate = secretConfig.getEmailVerificationTemplate();
-      String domain = secretConfig.getDomain();
+      String domain = secretConfig.getActiveDomain();
 
       String subject = emailTemplateService.getSubjectByTemplateName(emailVerificationTemplate);
       String body = emailTemplateService.getBodyByTemplateName(emailVerificationTemplate)

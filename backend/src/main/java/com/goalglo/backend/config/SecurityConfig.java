@@ -1,10 +1,10 @@
 package com.goalglo.backend.config;
 
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.goalglo.backend.repositories.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,12 +19,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,38 +36,43 @@ public class SecurityConfig {
 
    private final UserRepository userRepository;
    private final SecretConfig secretConfig;
+   private final LoadingCache<String, Integer> requestCountsPerIpAddress;
 
-   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig) {
+
+   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig, LoadingCache<String, Integer> requestCountsPerIpAddress) {
       this.userRepository = userRepository;
       this.secretConfig = secretConfig;
+      this.requestCountsPerIpAddress = requestCountsPerIpAddress;
+
    }
 
    @Bean
    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
       http
+         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
          .csrf(AbstractHttpConfigurer::disable)
-         .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
-            authorizationManagerRequestMatcherRegistry
-               .requestMatchers(HttpMethod.DELETE).hasAuthority(secretConfig.getSecuredRole())
-               .requestMatchers("/api/admin-actions/**").hasAuthority(secretConfig.getSecuredRole())
-               .requestMatchers("/user/**").hasAnyAuthority(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
-               .requestMatchers("/**").permitAll()
-               .anyRequest().authenticated())
-         .httpBasic(Customizer.withDefaults())
+         .authorizeHttpRequests(authz -> authz
+            .requestMatchers(HttpMethod.DELETE).hasAuthority(secretConfig.getSecuredRole())
+            .requestMatchers("/api/admin-actions/**").hasAuthority(secretConfig.getSecuredRole())
+            .requestMatchers("/user/**").hasAnyAuthority(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
+            .requestMatchers("/api/users/login").permitAll()
+            .requestMatchers("/**").permitAll()
+            .anyRequest().authenticated()
+         )
+         .httpBasic(httpBasic -> {
+         })
          .oauth2ResourceServer(oauth2 -> oauth2
-            .jwt(jwt -> jwt
-               .jwtAuthenticationConverter(jwtAuthenticationConverter())
-            )
+            .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
          )
-         .sessionManagement(session -> session
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-         )
+         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+         .addFilterBefore(new SecurityRateLimitFilter(requestCountsPerIpAddress), UsernamePasswordAuthenticationFilter.class)
          .logout(logout -> logout
             .logoutUrl("/logout")
             .logoutSuccessUrl("/")
             .invalidateHttpSession(true)
             .deleteCookies("JSESSIONID")
-            .permitAll());
+            .permitAll()
+         );
 
       return http.build();
    }
@@ -74,9 +80,11 @@ public class SecurityConfig {
    @Bean
    CorsConfigurationSource corsConfigurationSource() {
       CorsConfiguration configuration = new CorsConfiguration();
-      configuration.setAllowedOrigins(List.of(secretConfig.getDomain()));
-      configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-      configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+      configuration.setAllowedOrigins(secretConfig.getAllowedDomains());
+      configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+      configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+      configuration.setAllowCredentials(true);
+      configuration.setMaxAge(3600L);
 
       UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
       source.registerCorsConfiguration("/**", configuration);
