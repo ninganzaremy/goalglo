@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Getter
 @Setter
 @Component
@@ -63,7 +66,11 @@ public class SecretConfig {
       this.environment = environment;
    }
 
-   public String getDomain() {
+   public List<String> getAllowedDomains() {
+      return Arrays.asList(devDomain, prodDomain);
+   }
+
+   public String getActiveDomain() {
       return "dev".equalsIgnoreCase(environment.getProperty("spring.profiles.active", "dev")) ? devDomain : prodDomain;
    }
 

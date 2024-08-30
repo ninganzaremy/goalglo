@@ -82,7 +82,7 @@ public class PaymentService {
       Payment payment = paymentRepository.findById(paymentId)
          .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
       // Confirm payment with Stripe using dynamic paymentMethodId
-      stripeWebhook.confirmPaymentIntent(payment.getStripePaymentId(), payment.getPaymentMethod(), secretConfig.getDomain() + "/paid/thanks");
+      stripeWebhook.confirmPaymentIntent(payment.getStripePaymentId(), payment.getPaymentMethod(), secretConfig.getActiveDomain() + "/paid/thanks");
 
       payment.setStatus("COMPLETED");
       payment = paymentRepository.save(payment);
