@@ -1,7 +1,9 @@
 const Footer = () => {
    return (
       <footer>
-         <p>&copy; 2024 GoalGlo</p>
+         <p className="text-center text-gray-500 text-xs">
+            &copy;2024 GoalGlo All rights reserved.
+         </p>
       </footer>
    );
 }
