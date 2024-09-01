@@ -52,15 +52,13 @@ public class SecurityConfig {
          .cors(cors -> cors.configurationSource(corsConfigurationSource()))
          .csrf(AbstractHttpConfigurer::disable)
          .authorizeHttpRequests(authz -> authz
-            .requestMatchers(HttpMethod.DELETE).hasAuthority(secretConfig.getSecuredRole())
-            .requestMatchers("/api/admin-actions/**").hasAuthority(secretConfig.getSecuredRole())
-            .requestMatchers("/user/**").hasAnyAuthority(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
-            .requestMatchers("/api/users/login").permitAll()
+            .requestMatchers(HttpMethod.DELETE).hasRole(secretConfig.getSecuredRole())
+            .requestMatchers("/api/admin-actions/**").hasRole(secretConfig.getSecuredRole())
+            .requestMatchers("/user/**").hasAnyRole(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
+            .requestMatchers("/api/users/login", "/api/logout").permitAll()
             .requestMatchers("/**").permitAll()
             .anyRequest().authenticated()
          )
-         .httpBasic(httpBasic -> {
-         })
          .oauth2ResourceServer(oauth2 -> oauth2
             .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
          )
@@ -90,8 +88,6 @@ public class SecurityConfig {
       source.registerCorsConfiguration("/**", configuration);
       return source;
    }
-
-
 
    @Bean
    public BCryptPasswordEncoder passwordEncoder() {
