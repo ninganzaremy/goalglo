@@ -1,5 +1,6 @@
 import {combineReducers} from '@reduxjs/toolkit';
 import authReducer from './authReducer';
+import serviceReducer from './serviceReducer'; // Import the service reducer
 
 /**
  * Root Reducer
@@ -9,6 +10,7 @@ import authReducer from './authReducer';
  */
 const rootReducer = combineReducers({
    auth: authReducer,
+   service: serviceReducer
 });
 
 export default rootReducer;
