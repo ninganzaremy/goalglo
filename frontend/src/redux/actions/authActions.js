@@ -1,5 +1,5 @@
-import axios from 'axios';
-import {getApiUrl} from "../../utils/envConfig.js";
+import {removeEncryptedItem, setEncryptedItem} from "../../utils/envConfig.js";
+import apiService from "../../services/apiService.js";
 
 
 export const LOGIN_REQUEST = 'LOGIN_REQUEST';
@@ -18,19 +18,19 @@ export const loginUser = (username, password) => {
       dispatch({type: LOGIN_REQUEST});
 
       try {
-         const response = await axios.post(`${getApiUrl()}/users/login`, {username, password});
+         const response = await apiService.post('/users/login', {username, password});
 
          // get returned token
          const {token, user} = response.data;
-
-         // Store the token in localStorage
-         localStorage.setItem('token', token);
+         // Set the token in a cookie
+         setEncryptedItem(token);
 
          dispatch({
             type: LOGIN_SUCCESS,
             payload: user
          });
       } catch (error) {
+         console.log("error:" + error)
          dispatch({
             type: LOGIN_FAILURE,
             payload: error.response ? error.response.data.message : 'An unexpected error occurred'
@@ -45,6 +45,6 @@ export const loginUser = (username, password) => {
  * @returns {Object} - An action object
  */
 export const logoutUser = () => {
-   localStorage.removeItem('token');
+   removeEncryptedItem();
    return {type: 'LOGOUT'};
 };
