@@ -1,29 +1,50 @@
-import axios from 'axios';
+import {removeEncryptedItem, setEncryptedItem} from "../../utils/envConfig.js";
+import apiService from "../../services/apiService.js";
 
-export const loginRequest = () => ({
-   type: 'LOGIN_REQUEST',
-});
 
-export const loginSuccess = (user) => ({
-   type: 'LOGIN_SUCCESS',
-   payload: user,
-});
+export const LOGIN_REQUEST = 'LOGIN_REQUEST';
+export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
+export const LOGIN_FAILURE = 'LOGIN_FAILURE';
 
-export const loginFailure = (error) => ({
-   type: 'LOGIN_FAILURE',
-   payload: error,
-});
+/**
+ * Action creator for user login
+ *
+ * @param {string} username - The user's username
+ * @param {string} password - The user's password
+ * @returns {Function} - A function that dispatches actions to the Redux store
+ */
+export const loginUser = (username, password) => {
+   return async (dispatch) => {
+      dispatch({type: LOGIN_REQUEST});
 
-export const login = (username, password) => async (dispatch) => {
-   dispatch(loginRequest());
-   try {
-      const response = await axios.post('/api/login', {username, password});
-      dispatch(loginSuccess(response.data));
-   } catch (error) {
-      dispatch(loginFailure(error.response.data));
-   }
+      try {
+         const response = await apiService.post('/users/login', {username, password});
+
+         // get returned token
+         const {token, user} = response.data;
+         // Set the token in a cookie
+         setEncryptedItem(token);
+
+         dispatch({
+            type: LOGIN_SUCCESS,
+            payload: user
+         });
+      } catch (error) {
+         console.log("error:" + error)
+         dispatch({
+            type: LOGIN_FAILURE,
+            payload: error.response ? error.response.data.message : 'An unexpected error occurred'
+         });
+      }
+   };
 };
 
-export const logout = () => ({
-   type: 'LOGOUT',
-});
+/**
+ * Action creator for user logout
+ *
+ * @returns {Object} - An action object
+ */
+export const logoutUser = () => {
+   removeEncryptedItem();
+   return {type: 'LOGOUT'};
+};
