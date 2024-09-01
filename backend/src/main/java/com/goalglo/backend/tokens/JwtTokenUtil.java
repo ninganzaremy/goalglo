@@ -11,7 +11,6 @@ import java.util.Set;
 
 @Component
 public class JwtTokenUtil {
-
    private final JwtEncoder jwtEncoder;
 
    public JwtTokenUtil(JwtEncoder jwtEncoder) {
@@ -20,8 +19,6 @@ public class JwtTokenUtil {
 
    public String generateJwtToken(String subject, Set<String> roles, long tokenValidity) {
       Instant now = Instant.now();
-
-      // Set the JWT claims and ensure HS256 algorithm is applied
       JwtClaimsSet claimsSet = JwtClaimsSet.builder()
          .issuer("self") 
          .issuedAt(now)
