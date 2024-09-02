@@ -1,32 +1,44 @@
 import {Route, Routes} from 'react-router-dom';
-import Home from './pages/Home';
-import Blog from './pages/Blog';
-import BlogDetail from './pages/BlogDetail';
-import Dashboard from './pages/Dashboard';
-import AdminPanel from './pages/admin/AdminPanel.jsx';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import Contact from './pages/Contact';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import CreateService from "./pages/CreateService.jsx";
 
+import Header from './components/layout/Header.jsx';
+import Footer from './components/layout/Footer.jsx';
+import HomePage from "./pages/HomePage.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
+import RegisterPage from "./pages/RegisterPage.jsx";
+import UserDashboardPage from "./pages/UserDashboardPage.jsx";
+import ServicesPage from "./pages/ServicesPage.jsx";
+import CreateServicePage from "./pages/CreateServicePage.jsx";
+import BlogPage from "./pages/BlogPage.jsx";
+import ContactPage from "./pages/ContactPage.jsx";
+import AboutUs from "./components/home/AboutUs.jsx";
+import CreateBlogPostPage from "./pages/CreateBlogPostPage.jsx";
+
+import './styles/main.scss';
+
+
+/**
+ * The main App component.
+ *
+ * @returns {JSX.Element}
+ */
 const App = () => {
    return (
-      <div>
+      <div className="app">
          <Header/>
-         <Routes>
-            <Route path="/" element={<Home/>}/>
-            <Route path="/blog" element={<Blog/>}/>
-            <Route path="/blog/:id" element={<BlogDetail/>}/>
-            <Route path="/dashboard" element={<Dashboard/>}/>
-            <Route path="/admin" element={<AdminPanel/>}/>
-            <Route path="/admin/create-service" element={<CreateService/>}/>
-
-            <Route path="/register" element={<Register/>}/>
-            <Route path="/login" element={<Login/>}/>
-            <Route path="/contact" element={<Contact/>}/>
-         </Routes>
+         <main>
+            <Routes>
+               <Route path="/" element={<HomePage/>}/>
+               <Route path="/login" element={<LoginPage/>}/>
+               <Route path="/register" element={<RegisterPage/>}/>
+               <Route path="/about" element={<AboutUs/>}/>
+               <Route path="/dashboard" element={<UserDashboardPage/>}/>
+               <Route path="/admin/create-service" element={<CreateServicePage/>}/>
+               <Route path="/services" element={<ServicesPage/>}/>
+               <Route path="/blog" element={<BlogPage/>}/>
+               <Route path="/contact" element={<ContactPage/>}/>
+               <Route path="/create-blog" element={<CreateBlogPostPage/>}/>
+            </Routes>
+         </main>
          <Footer/>
       </div>
    );
