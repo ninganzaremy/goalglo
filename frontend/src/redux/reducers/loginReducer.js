@@ -1,4 +1,4 @@
-import {LOGIN_FAILURE, LOGIN_REQUEST, LOGIN_SUCCESS} from '../actions/authActions';
+import {LOGIN_FAILURE, LOGIN_REQUEST, LOGIN_SUCCESS} from '../actions/loginAction.js';
 
 /**
  * @typedef {Object} AuthState
@@ -23,7 +23,7 @@ const initialState = {
  * @param {Object} action - The action object
  * @returns {AuthState} The new state
  */
-const authReducer = (state = initialState, action) => {
+const loginReducer = (state = initialState, action) => {
    switch (action.type) {
       case LOGIN_REQUEST:
          return {...state, loading: true, error: null};
@@ -38,4 +38,4 @@ const authReducer = (state = initialState, action) => {
    }
 };
 
-export default authReducer;
+export default loginReducer;
