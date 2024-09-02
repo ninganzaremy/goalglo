@@ -1,0 +1,123 @@
+.financial-goal-tracker {
+  background-color: $white;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  padding: 2rem;
+
+  h2 {
+    color: $primary-color;
+    margin-bottom: 1.5rem;
+  }
+
+  .goal-tracker-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.goal-list {
+  h3 {
+    color: $secondary-color;
+    margin-bottom: 1rem;
+  }
+
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid $border-color;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: lighten($primary-color, 35%);
+    }
+  }
+
+  .goal-name {
+    font-weight: bold;
+  }
+
+  .goal-amount, .goal-date {
+    color: $text-secondary;
+  }
+}
+
+.goal-form {
+  h3 {
+    color: $secondary-color;
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: $primary-color;
+    color: $white;
+    border: none;
+    border-radius: $border-radius;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: darken($primary-color, 10%);
+    }
+  }
+}
+
+.goal-progress {
+  h3 {
+    color: $secondary-color;
+    margin-bottom: 1rem;
+  }
+
+  .progress-bar {
+    height: 20px;
+    background-color: lighten($primary-color, 35%);
+    border-radius: $border-radius;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .progress {
+    height: 100%;
+    background-color: $primary-color;
+    transition: width 0.3s ease;
+  }
+
+  p {
+    margin-bottom: 0.5rem;
+  }
+}

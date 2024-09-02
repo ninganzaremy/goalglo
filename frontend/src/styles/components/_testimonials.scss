@@ -1,0 +1,37 @@
+.testimonials {
+  @include section-padding;
+  background-color: $primary-color;
+  color: white;
+
+  h2 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 2.5rem;
+  }
+
+  .testimonial-list {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 30px;
+  }
+
+  .testimonial-item {
+    flex-basis: calc(50% - 15px);
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+    p {
+      font-size: 1.1rem;
+      font-style: italic;
+      margin-bottom: 15px;
+    }
+
+    .testimonial-author {
+      font-weight: bold;
+      text-align: right;
+    }
+  }
+}

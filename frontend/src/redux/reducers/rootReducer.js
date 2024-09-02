@@ -1,6 +1,14 @@
 import {combineReducers} from '@reduxjs/toolkit';
-import authReducer from './authReducer';
-import serviceReducer from './serviceReducer'; // Import the service reducer
+import loginReducer from './loginReducer.js';
+import createServiceReducer from './createServiceReducer.js';
+import registerReducer from './registerReducer';
+import userReducer from "./userReducer.js";
+import serviceReducer from "./serviceReducer.js";
+import blogReducer from "./blogReducer.js";
+import contactReducer from "./contactReducer.js";
+import goalReducer from "./goalReducer.js";
+import accountSummaryReducer from "./accountSummaryReducer.js";
+import recentTransactionsReducer from "./recentTransactionsReducer.js";
 
 /**
  * Root Reducer
@@ -9,8 +17,18 @@ import serviceReducer from './serviceReducer'; // Import the service reducer
  * Add additional reducers here as your application grows.
  */
 const rootReducer = combineReducers({
-   auth: authReducer,
-   service: serviceReducer
+   login: loginReducer,
+   createService: createServiceReducer,
+   register: registerReducer,
+   user: userReducer,
+   services: serviceReducer,
+   blog: blogReducer,
+   contact: contactReducer,
+   goals: goalReducer,
+   accountSummary: accountSummaryReducer,
+   recentTransactions: recentTransactionsReducer
+
+
 });
 
 export default rootReducer;

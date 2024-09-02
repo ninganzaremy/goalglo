@@ -19,14 +19,14 @@ Jenkins, ensuring a robust and automated deployment pipeline.
 - Video Consultation Feature
 - Multi-language Support
 - Progressive Web App (PWA) Capabilities
-- Data Visualization Dashboard
+- Data Visualization DashboardPage
 - Collaborative Goal Setting
 - Marketplace for Financial Products
 - User Authentication and Authorization
-- Blog System with CRUD operations
+- BlogPage System with CRUD operations
 - Email Collection and Newsletter Integration
 - Appointment Scheduling
-- User Dashboard
+- User DashboardPage
 - Admin Panel
 
 ## Technologies Used
@@ -138,8 +138,8 @@ goalglo/
 │   │   │   ├── ServicesPage.jsx
 │   │   │   ├── BlogPage.jsx
 │   │   │   ├── AppointmentPage.jsx
-│   │   │   ├── LoginPage.jsx
-│   │   │   ├── RegisterPage.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
 │   │   │   ├── AdminDashboard.jsx
 │   │   │   ├── UserDashboard.jsx
 │   │   │   ├── VideoConsultationPage.jsx

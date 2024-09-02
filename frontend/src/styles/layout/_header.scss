@@ -1,0 +1,71 @@
+.header {
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+  .container {
+    @include flex-center;
+    justify-content: space-between;
+    height: 80px;
+  }
+
+  nav ul {
+    display: flex;
+    list-style-type: none;
+
+    li {
+      margin-left: 20px;
+    }
+
+    a {
+      color: $text-color;
+      text-decoration: none;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: $primary-color;
+      }
+    }
+  }
+
+  .auth-buttons {
+    display: flex;
+    gap: 10px;
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+
+      &.btn-secondary {
+        background-color: transparent;
+        color: $primary-color;
+        border: 1px solid $primary-color;
+
+        &:hover {
+          background-color: $primary-color;
+          color: white;
+        }
+      }
+
+      &.btn-primary {
+        background-color: $primary-color;
+        color: white;
+
+        &:hover {
+          background-color: darken($primary-color, 10%);
+        }
+      }
+
+      &.btn-accent {
+        background-color: $accent-color;
+        color: white;
+
+        &:hover {
+          background-color: darken($accent-color, 10%);
+        }
+      }
+    }
+  }
+}
