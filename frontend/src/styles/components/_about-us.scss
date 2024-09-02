@@ -1,0 +1,12 @@
+.about-us {
+  @include section-padding;
+  background-color: $background-color;
+
+  h2 {
+    margin-bottom: 20px;
+  }
+
+  p {
+    margin-bottom: 30px;
+  }
+}

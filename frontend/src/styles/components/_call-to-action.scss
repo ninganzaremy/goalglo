@@ -1,0 +1,23 @@
+.call-to-action {
+  @include section-padding;
+  background-color: $primary-color;
+  color: white;
+  text-align: center;
+
+  h2 {
+    margin-bottom: 20px;
+  }
+
+  p {
+    margin-bottom: 30px;
+  }
+
+  .btn-primary {
+    background-color: white;
+    color: $primary-color;
+
+    &:hover {
+      background-color: darken(white, 10%);
+    }
+  }
+}

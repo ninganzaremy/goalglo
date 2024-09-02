@@ -1,0 +1,146 @@
+contact-page {
+  padding: 2rem;
+  background-color: $background-color;
+
+  h1 {
+    font-size: 2.5rem;
+    color: $primary-color;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .contact-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+
+    @media (max-width: $breakpoint-md) {
+      flex-direction: column;
+    }
+  }
+
+  .error-message, .success-message {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: $border-radius;
+    text-align: center;
+  }
+
+  .error-message {
+    background-color: lighten($error-color, 35%);
+    color: $error-color;
+  }
+
+  .success-message {
+    background-color: lighten($success-color, 35%);
+    color: $success-color;
+  }
+}
+
+// src/styles/components/_contact-form.scss
+.contact-form {
+  flex: 1;
+  background-color: $white;
+  padding: 2rem;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+
+  .form-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: $text-color;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+      }
+    }
+
+    textarea {
+      height: 150px;
+    }
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: $primary-color;
+    color: $white;
+    border: none;
+    border-radius: $border-radius;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: darken($primary-color, 10%);
+    }
+
+    &:disabled {
+      background-color: lighten($primary-color, 20%);
+      cursor: not-allowed;
+    }
+  }
+}
+
+// src/styles/components/_contact-info.scss
+.contact-info {
+  flex: 1;
+  background-color: $white;
+  padding: 2rem;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+
+  h2 {
+    font-size: 1.8rem;
+    color: $primary-color;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    margin-bottom: 1.5rem;
+    color: $text-color;
+  }
+
+  ul {
+    list-style-type: none;
+    padding: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+
+      i {
+        font-size: 1.2rem;
+        color: $primary-color;
+        margin-right: 1rem;
+      }
+    }
+  }
+
+  .social-links {
+    margin-top: 1.5rem;
+
+    a {
+      display: inline-block;
+      margin-right: 1rem;
+      font-size: 1.5rem;
+      color: $primary-color;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: darken($primary-color, 15%);
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+.login-page {
+  @include flex-center;
+  min-height: 100vh;
+  background-color: $background-color;
+
+  .login-form {
+    width: 100%;
+    max-width: 400px;
+    background-color: $white;
+    padding: 2rem;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow;
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: $text-color;
+    }
+
+    .error-message {
+      background-color: lighten($error-color, 35%);
+      border: 1px solid $error-color;
+      color: darken($error-color, 10%);
+      padding: 0.75rem;
+      border-radius: $border-radius;
+      margin-bottom: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+
+      label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: $text-color;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid $border-color;
+        border-radius: $border-radius;
+        font-size: $font-size-base;
+
+        &:focus {
+          outline: none;
+          border-color: $primary-color;
+          box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+        }
+      }
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .btn-primary {
+        @include button-style;
+      }
+
+      .forgot-password {
+        color: $primary-color;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: $font-size-small;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}

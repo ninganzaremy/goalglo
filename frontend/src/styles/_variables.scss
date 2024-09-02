@@ -1,0 +1,36 @@
+// Color Palette
+$primary-color: #4A90E2;    // Trustworthy blue
+$secondary-color: #50E3C2;  // Growth green
+$accent-color: #F5A623;     // Warm orange for CTAs
+$text-color: #333333;       // Dark gray for main text
+$text-secondary: #666666;   // Medium gray for secondary text
+$background-color: #F8F9FA; // Light gray for backgrounds
+$white: #FFFFFF;
+$success-color: #2ECC71;    // Green for success states
+$warning-color: #F39C12;    // Orange for warning states
+$border-color: #E1E1E1;     // Light gray for borders
+
+// Typography
+$font-family-base: 'Roboto', sans-serif;
+$font-family-heading: 'Montserrat', sans-serif;
+
+$font-size-base: 16px;
+$font-size-large: 18px;
+$font-size-small: 14px;
+
+$line-height-base: 1.5;
+
+// Breakpoints
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+
+// Error colors
+$error-bg-color: #FEE2E2;
+$error-text-color: #DC2626;
+$error-color: #E74C3C;
+
+// Other variables
+$border-radius: 4px;
+$box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
