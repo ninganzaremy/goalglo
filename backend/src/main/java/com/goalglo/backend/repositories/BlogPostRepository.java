@@ -12,6 +12,14 @@ import java.util.UUID;
  */
 @Repository
 public interface BlogPostRepository extends JpaRepository<BlogPost, UUID> {
+   /**
+    * Finds all blog posts by a specific author.
+    *
+    * @param published The published status of the blog post.
+    * @return A list of blog posts with the specified published status.
+    */
+   List<BlogPost> findByPublished(boolean published);
+
 
    /**
     * Finds all blog posts by a specific author.
@@ -50,4 +58,5 @@ public interface BlogPostRepository extends JpaRepository<BlogPost, UUID> {
     * @return The number of blog posts deleted.
     */
    int deleteByAuthorId(UUID authorId);
+
 }

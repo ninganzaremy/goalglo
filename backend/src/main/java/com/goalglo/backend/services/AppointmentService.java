@@ -8,8 +8,8 @@ import com.goalglo.backend.entities.TimeSlot;
 import com.goalglo.backend.entities.User;
 import com.goalglo.backend.repositories.AppointmentRepository;
 import com.goalglo.backend.repositories.ServiceRepository;
+import com.goalglo.backend.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,17 +24,16 @@ public class AppointmentService {
    private final TimeSlotService timeSlotService;
    private final UserService userService;
    private final ServiceRepository serviceRepository;
-
-
-
+   private final UserRepository userRepository;
 
    @Autowired
-   public AppointmentService(AppointmentRepository appointmentRepository, TimeSlotService timeSlotService, UserService userService, ServiceRepository serviceRepository) {
+   public AppointmentService(AppointmentRepository appointmentRepository, TimeSlotService timeSlotService,
+                             UserService userService, ServiceRepository serviceRepository, UserRepository userRepository) {
       this.appointmentRepository = appointmentRepository;
       this.timeSlotService = timeSlotService;
       this.userService = userService;
       this.serviceRepository = serviceRepository;
-
+      this.userRepository = userRepository;
 
    }
 
@@ -43,10 +42,10 @@ public class AppointmentService {
     *
     * @param appointmentDTO The DTO object containing the appointment details.
     * @param timeSlotId     The UUID of the time slot to be booked.
-    * @param userDetails    The logged-in user's details, if available.
+    * @param username       The username of the user.
     * @return The created AppointmentDTO.
     */
-   public AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO, UUID timeSlotId, UserDetails userDetails) {
+   public AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO, UUID timeSlotId, String username) {
       // Check if the time slot is available
       TimeSlot timeSlot = timeSlotService.findTimeSlotById(timeSlotId)
          .orElseThrow(() -> new ResourceNotFoundException("TimeSlot not found"));
@@ -56,9 +55,9 @@ public class AppointmentService {
       }
 
       User user;
-      if (userDetails != null) {
+      if (username != null) {
          // Find the logged-in user
-         user = userService.findByUsernameOrEmail(userDetails.getUsername());
+         user = userService.findByUsernameOrEmail(username);
       } else {
          // Handle non-logged-in users by finding or creating a user by email
          user = userService.findOrCreateUserByEmail(appointmentDTO.getEmail(), appointmentDTO);
@@ -75,44 +74,46 @@ public class AppointmentService {
             .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
          appointment.setService(service);
       }
-
       // Save the appointment
       appointment = appointmentRepository.save(appointment);
-
       // Mark the time slot as booked
       timeSlotService.bookSlot(timeSlotId, appointment);
 
       return new AppointmentDTO(appointment);
    }
 
-
    /**
     * Finds an appointment by its UUID.
     *
     * @param id The UUID of the appointment to find.
-    * @return An Optional containing the appointment if found, or an empty Optional if not.
+    * @return An Optional containing the appointment if found, or an empty Optional
+    *         if not.
     */
    public Optional<AppointmentDTO> findAppointmentById(UUID id) {
       return appointmentRepository.findById(id).map(AppointmentDTO::new);
    }
+
    /**
     * Finds all appointments associated with a specific user.
     *
-    * @param userId The UUID of the user.
+    * @param username The UUID of the user.
     * @return A list of appointments associated with the user.
     */
-   public List<AppointmentDTO> findAppointmentsByUserId(UUID userId) {
-      return appointmentRepository.findByUserId(userId).stream()
+   public List<AppointmentDTO> findAppointmentsByAuthenticatedUser(String username) {
+      User user = userRepository.findByUsername(username)
+         .orElseThrow(() -> new RuntimeException("User not found"));
+      List<Appointment> appointments = appointmentRepository.findByUserId(user.getId());
+      return appointments.stream()
          .map(AppointmentDTO::new)
          .collect(Collectors.toList());
    }
 
-
    /**
     * Updates an existing appointment with new information.
     *
-    * @param id                The UUID of the appointment to update.
-    * @return An Optional containing the updated appointment if found and updated, or an empty Optional if not.
+    * @param id The UUID of the appointment to update.
+    * @return An Optional containing the updated appointment if found and updated,
+    *         or an empty Optional if not.
     */
    public Optional<AppointmentDTO> updateAppointment(UUID id, AppointmentDTO appointmentDTO) {
       return appointmentRepository.findById(id).map(existingAppointment -> {
@@ -148,7 +149,8 @@ public class AppointmentService {
     * Deletes an appointment by its UUID.
     *
     * @param id The UUID of the appointment to delete.
-    * @return true if the appointment was deleted, false if the appointment was not found.
+    * @return true if the appointment was deleted, false if the appointment was not
+    *         found.
     */
    public boolean deleteAppointment(UUID id) {
       if (appointmentRepository.existsById(id)) {
@@ -156,5 +158,16 @@ public class AppointmentService {
          return true;
       }
       return false;
+   }
+
+   /**
+    * Retrieves all appointments.
+    *
+    * @return A list of all appointments.
+    */
+   public List<AppointmentDTO> findAllAppointments() {
+      return appointmentRepository.findAll().stream()
+         .map(AppointmentDTO::new)
+         .collect(Collectors.toList());
    }
 }

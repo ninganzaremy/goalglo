@@ -9,6 +9,8 @@ import contactReducer from "./contactReducer.js";
 import goalReducer from "./goalReducer.js";
 import accountSummaryReducer from "./accountSummaryReducer.js";
 import recentTransactionsReducer from "./recentTransactionsReducer.js";
+import appointmentsReducer from "./appointmentsReducer.js";
+import authReducer from "./authReducer.js";
 
 /**
  * Root Reducer
@@ -17,6 +19,7 @@ import recentTransactionsReducer from "./recentTransactionsReducer.js";
  * Add additional reducers here as your application grows.
  */
 const rootReducer = combineReducers({
+   auth: authReducer,
    login: loginReducer,
    createService: createServiceReducer,
    register: registerReducer,
@@ -26,9 +29,8 @@ const rootReducer = combineReducers({
    contact: contactReducer,
    goals: goalReducer,
    accountSummary: accountSummaryReducer,
-   recentTransactions: recentTransactionsReducer
-
-
+   recentTransactions: recentTransactionsReducer,
+   appointments: appointmentsReducer
 });
 
 export default rootReducer;

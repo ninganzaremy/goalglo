@@ -1,6 +1,6 @@
-import {useDispatch, useSelector} from 'react-redux';
-import {fetchAccountSummary} from '../../redux/actions/accountSummaryActions';
-import {useEffect} from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAccountSummary } from "../../redux/actions/accountSummaryActions";
+import { useEffect } from "react";
 
 /**
  * AccountSummary component
@@ -13,7 +13,9 @@ import {useEffect} from "react";
  */
 const AccountSummary = () => {
    const dispatch = useDispatch();
-   const { balance, income, expenses, loading, error } = useSelector(state => state.accountSummary);
+   const { balance, income, expenses, loading, error } = useSelector(
+      (state) => state.accountSummary || {}
+   );
 
    useEffect(() => {
       dispatch(fetchAccountSummary());
@@ -27,15 +29,15 @@ const AccountSummary = () => {
          <h2>Account Summary</h2>
          <div className="summary-item">
             <span>Current Balance:</span>
-            <span>${balance.toFixed(2)}</span>
+            <span>${(balance || 0).toFixed(2)}</span>
          </div>
          <div className="summary-item">
             <span>Monthly Income:</span>
-            <span>${income.toFixed(2)}</span>
+            <span>${(income || 0).toFixed(2)}</span>
          </div>
          <div className="summary-item">
             <span>Monthly Expenses:</span>
-            <span>${expenses.toFixed(2)}</span>
+            <span>${(expenses || 0).toFixed(2)}</span>
          </div>
       </div>
    );

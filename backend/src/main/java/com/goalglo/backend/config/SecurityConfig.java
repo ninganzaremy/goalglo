@@ -1,7 +1,7 @@
 package com.goalglo.backend.config;
 
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.goalglo.backend.repositories.UserRepository;
+import com.goalglo.backend.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -36,41 +37,45 @@ public class SecurityConfig {
 
    private final UserRepository userRepository;
    private final SecretConfig secretConfig;
-   private final LoadingCache<String, Integer> requestCountsPerIpAddress;
 
-
-   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig, LoadingCache<String, Integer> requestCountsPerIpAddress) {
+   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig) {
       this.userRepository = userRepository;
       this.secretConfig = secretConfig;
-      this.requestCountsPerIpAddress = requestCountsPerIpAddress;
 
    }
 
    @Bean
-   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+   public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
       http
          .cors(cors -> cors.configurationSource(corsConfigurationSource()))
          .csrf(AbstractHttpConfigurer::disable)
          .authorizeHttpRequests(authz -> authz
-            .requestMatchers(HttpMethod.DELETE).hasRole(secretConfig.getSecuredRole())
-            .requestMatchers("/api/admin-actions/**").hasRole(secretConfig.getSecuredRole())
-            .requestMatchers("/user/**").hasAnyRole(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
-            .requestMatchers("/api/users/login", "/api/logout").permitAll()
-            .requestMatchers("/**").permitAll()
-            .anyRequest().authenticated()
-         )
+            // Authenticated endpoints
+            .requestMatchers("/api/users/profile", "/api/transactions/user", "/api/appointments",
+               "/api/transactions/recent")
+            .authenticated()
+
+            // Secured role endpoints
+            .requestMatchers(HttpMethod.DELETE, "/api/appointments/all", "/api/transactions/all", "/api/admin-actions/**")
+            .hasRole(secretConfig.getSecuredRole())
+
+            // Mixed role endpoints
+            .requestMatchers("/user/**", "/api/transactions/**")
+            .hasAnyRole(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
+
+            // Allow all other requests
+            .anyRequest().permitAll())
          .oauth2ResourceServer(oauth2 -> oauth2
-            .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
-         )
+            .jwt(jwt -> jwt
+               .jwtAuthenticationConverter(jwtAuthenticationConverter())))
+         .addFilterBefore(new JwtAuthenticationFilter(jwtDecoder), UsernamePasswordAuthenticationFilter.class)
          .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-         .addFilterBefore(new SecurityRateLimitFilter(requestCountsPerIpAddress), UsernamePasswordAuthenticationFilter.class)
          .logout(logout -> logout
             .logoutUrl("/logout")
             .logoutSuccessUrl("/")
             .invalidateHttpSession(true)
             .deleteCookies("JSESSIONID")
-            .permitAll()
-         );
+            .permitAll());
 
       return http.build();
    }
@@ -121,6 +126,7 @@ public class SecurityConfig {
 
       JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
       jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+      jwtAuthenticationConverter.setPrincipalClaimName("sub");
       return jwtAuthenticationConverter;
    }
 

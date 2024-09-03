@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-
 @Service
 public class UserService {
 
@@ -38,9 +37,11 @@ public class UserService {
    private final JwtTokenUtil jwtTokenUtil;
    private final RoleRepository roleRepository;
 
-
    @Autowired
-   public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, EmailVerificationTokenRepository emailVerificationTokenRepository, EmailTemplateService emailTemplateService, AwsSesEmailService awsSesEmailService, UuidTokenService uuidTokenService, SecretConfig secretConfig, JwtTokenUtil jwtTokenUtil, RoleRepository roleRepository) {
+   public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder,
+                      EmailVerificationTokenRepository emailVerificationTokenRepository, EmailTemplateService emailTemplateService,
+                      AwsSesEmailService awsSesEmailService, UuidTokenService uuidTokenService, SecretConfig secretConfig,
+                      JwtTokenUtil jwtTokenUtil, RoleRepository roleRepository) {
       this.userRepository = userRepository;
       this.passwordEncoder = passwordEncoder;
       this.emailVerificationTokenRepository = emailVerificationTokenRepository;
@@ -52,24 +53,28 @@ public class UserService {
       this.roleRepository = roleRepository;
 
    }
+
    /**
-    * Registers a new user or upgrades an existing "PROSPECT" user to a fully registered user.
+    * Registers a new user or upgrades an existing "PROSPECT" user to a fully
+    * registered user.
     *
-    * @param user The `User` object containing the details of the user to register or upgrade.
-    *             If the user is an existing "PROSPECT", their account will be upgraded.
+    * @param user The `User` object containing the details of the user to register
+    *             or upgrade.
+    *             If the user is an existing "PROSPECT", their account will be
+    *             upgraded.
     *             Otherwise, a new account will be created.
-    * @return A `UserDTO` containing the details of the registered or upgraded user.
+    * @return A `UserDTO` containing the details of the registered or upgraded
+    *         user.
     */
    public UserDTO registerUser(User user) {
-      Role prospectRole = roleRepository.findByName(secretConfig.getProspectRole())
-         .orElseThrow(() -> new RuntimeException("Prospect role not found"));
+
       Role publicRole = roleRepository.findByName(secretConfig.getPublicRole())
          .orElseThrow(() -> new RuntimeException("Public role not found"));
 
       Optional<User> existingUserOpt = userRepository.findByEmailOrUsername(user.getEmail(), user.getUsername());
 
       return existingUserOpt.map(existingUser -> {
-         if (existingUser.getRoles().contains(prospectRole)) {
+         if (existingUser.getRoles().stream().anyMatch(role -> secretConfig.getProspectRole().equals(role.getName()))) {
             // Upgrade the existing "PROSPECT" to a registered user
             return processUserUpdate(existingUser, user, publicRole);
          } else {
@@ -83,12 +88,16 @@ public class UserService {
    }
 
    /**
-    * Processes the update of a user's details, including setting the username, password, and roles.
+    * Processes the update of a user's details, including setting the username,
+    * password, and roles.
     *
-    * @param existingUser The `User` entity representing the existing user in the database.
+    * @param existingUser The `User` entity representing the existing user in the
+    *                     database.
     *                     This user will be updated with the new details.
-    * @param newUser      The `User` object containing the new details to be applied to the existing user.
-    * @param publicRole   The `Role` entity representing the public role to be assigned to the user.
+    * @param newUser      The `User` object containing the new details to be
+    *                     applied to the existing user.
+    * @param publicRole   The `Role` entity representing the public role to be
+    *                     assigned to the user.
     * @return A `UserDTO` containing the updated user details.
     */
    private UserDTO processUserUpdate(User existingUser, User newUser, Role publicRole) {
@@ -101,6 +110,7 @@ public class UserService {
       sendVerificationEmail(savedUser, uuidTokenService.generateUuidToken(savedUser));
       return new UserDTO(savedUser);
    }
+
    /**
     * Sends an email verification email to the user's registered email address.
     *
@@ -113,10 +123,11 @@ public class UserService {
 
       String subject = emailTemplateService.getSubjectByTemplateName(emailVerificationTemplate);
       String body = emailTemplateService.getBodyByTemplateName(emailVerificationTemplate)
-         .replace("{verificationUrl}", domain+"/api/users/verify-email?token=" + token);
+         .replace("{verificationUrl}", domain + "/verify-email?token=" + token);
 
       awsSesEmailService.sendEmail(user.getEmail(), subject, body);
    }
+
    /**
     * Verifies the user's email based on the provided token.
     *
@@ -139,12 +150,14 @@ public class UserService {
 
       return user.isEmailVerified();
    }
+
    /**
     * Logs in a user by checking their email or username and password.
     *
     * @param identifier The email or username of the user.
     * @param password   The password of the user.
-    * @return An Optional containing the UserDTO with a token if the login is successful, or an empty Optional if not.
+    * @return An Optional containing the UserDTO with a token if the login is
+    *         successful, or an empty Optional if not.
     */
    public Optional<UserDTO> loginUser(String identifier, String password) {
       Optional<User> userOpt = userRepository.findByEmailOrUsername(identifier, identifier);
@@ -169,25 +182,28 @@ public class UserService {
       return Optional.empty();
    }
 
-
-
    /**
     * Finds a user by their UUID.
     *
     * @param userId The UUID of the user.
-    * @return An Optional containing the user if found, or an empty Optional if not.
+    * @return An Optional containing the user if found, or an empty Optional if
+    *         not.
     */
    public Optional<UserDTO> findUserById(UUID userId) {
       return userRepository.findById(userId).map(UserDTO::new);
    }
 
    /**
-    * Updates an existing user's information based on the provided fields in the updatedUser object.
-    * Only the non-null and changed fields in updatedUser will be updated in the database.
+    * Updates an existing user's information based on the provided fields in the
+    * updatedUser object.
+    * Only the non-null and changed fields in updatedUser will be updated in the
+    * database.
     *
     * @param userId      The UUID of the user to update.
-    * @param updatedUser The User object containing the updated fields. Fields that are null will not be updated.
-    * @return An Optional containing the updated UserDTO if the user was found and updated, or an empty Optional if the user was not found.
+    * @param updatedUser The User object containing the updated fields. Fields that
+    *                    are null will not be updated.
+    * @return An Optional containing the updated UserDTO if the user was found and
+    *         updated, or an empty Optional if the user was not found.
     */
    public Optional<UserDTO> updateUser(UUID userId, User updatedUser) {
       return userRepository.findById(userId).map(user -> {
@@ -207,7 +223,6 @@ public class UserService {
          return new UserDTO(userRepository.save(user));
       });
    }
-
 
    /**
     * Updates a field if the new value is non-null.
@@ -242,7 +257,8 @@ public class UserService {
     *
     * @param identifier The username or email to search for.
     * @return The user found by the given identifier.
-    * @throws ResourceNotFoundException if no user is found with the provided identifier.
+    * @throws ResourceNotFoundException if no user is found with the provided
+    *                                   identifier.
     */
    public User findByUsernameOrEmail(String identifier) {
       return userRepository.findByUsername(identifier)
@@ -250,30 +266,59 @@ public class UserService {
          .orElseThrow(() -> new ResourceNotFoundException("User not found"));
    }
 
-
    /**
-    * Finds a user by their email. If the user does not exist, creates a new user with the provided details.
+    * Finds a user by their email. If the user does not exist, creates a new user
+    * with the provided details.
     *
     * @param email          The email of the user to find or create.
-    * @param appointmentDTO The DTO containing the details for creating a new user if one is not found.
+    * @param appointmentDTO The DTO containing the details for creating a new user
+    *                       if one is not found.
     * @return The existing or newly created user.
     */
    public User findOrCreateUserByEmail(String email, AppointmentDTO appointmentDTO) {
+      Role prospectRole = roleRepository.findByName(secretConfig.getProspectRole())
+         .orElseThrow(() -> new RuntimeException("PROSPECT role not found"));
+
       return userRepository.findByEmail(email)
-         .orElseGet(() -> {
-            User newUser = new User();
-            newUser.setEmail(appointmentDTO.getEmail());
-            newUser.setUsername(appointmentDTO.getEmail());
-            newUser.setFirstName(appointmentDTO.getFirstName());
-            newUser.setLastName(appointmentDTO.getLastName());
-            newUser.setPhoneNumber(appointmentDTO.getPhoneNumber());
-            newUser.setAddress(appointmentDTO.getAddress());
-            Role prospectRole = roleRepository.findByName(secretConfig.getProspectRole())
-               .orElseThrow(() -> new RuntimeException("PROSPECT role not found"));
-            newUser.addRole(prospectRole);
-            newUser.setPassword(passwordEncoder.encode(RandomStringUtils.randomAlphanumeric(10)));
-            return userRepository.save(newUser);
-         });
+         .map(existingUser -> {
+            if (existingUser.getRoles().stream().anyMatch(role -> secretConfig.getProspectRole().equals(role.getName()))) {
+               // Update the existing PROSPECT user
+               updateUserFromAppointmentDTO(existingUser, appointmentDTO);
+               return userRepository.save(existingUser);
+            }
+            return existingUser;
+         })
+         .orElseGet(() -> createNewProspectUser(appointmentDTO, prospectRole));
+   }
+
+   /**
+    * Creates a new user with the provided details and the "PROSPECT" role.
+    *
+    * @param appointmentDTO The DTO containing the details for the new user.
+    * @param prospectRole   The "PROSPECT" role to be assigned to the new user.
+    * @return The newly created user.
+    */
+   private User createNewProspectUser(AppointmentDTO appointmentDTO, Role prospectRole) {
+      User newUser = new User();
+      updateUserFromAppointmentDTO(newUser, appointmentDTO);
+      newUser.addRole(prospectRole);
+      newUser.setPassword(passwordEncoder.encode(RandomStringUtils.randomAlphanumeric(10)));
+      return userRepository.save(newUser);
+   }
+
+   /**
+    * Updates a user's details based on the provided AppointmentDTO.
+    *
+    * @param user           The user to update.
+    * @param appointmentDTO The DTO containing the new details for the user.
+    */
+   private void updateUserFromAppointmentDTO(User user, AppointmentDTO appointmentDTO) {
+      user.setEmail(appointmentDTO.getEmail());
+      user.setUsername(appointmentDTO.getEmail());
+      user.setFirstName(appointmentDTO.getFirstName());
+      user.setLastName(appointmentDTO.getLastName());
+      user.setPhoneNumber(appointmentDTO.getPhoneNumber());
+      user.setAddress(appointmentDTO.getAddress());
    }
 
    /**
@@ -320,6 +365,12 @@ public class UserService {
 
    public Optional<User> findById(UUID userId) {
       return userRepository.findById(userId);
+   }
+
+   public UserDTO getUserProfile(String identifier) {
+      User user = userRepository.findByEmailOrUsername(identifier, identifier)
+         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+      return new UserDTO(user);
    }
 
 }

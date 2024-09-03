@@ -1,41 +1,58 @@
-import {FETCH_USER_DATA_FAILURE, FETCH_USER_DATA_REQUEST, FETCH_USER_DATA_SUCCESS} from '../actions/userActions.js';
+import {
+   FETCH_USER_DATA_FAILURE,
+   FETCH_USER_DATA_REQUEST,
+   FETCH_USER_DATA_SUCCESS,
+   VERIFY_EMAIL_FAILURE,
+   VERIFY_EMAIL_REQUEST,
+   VERIFY_EMAIL_SUCCESS,
+} from '../actions/userActions';
 
-/**
- * Reducer function for managing user data state.
- * @param {Object} state - The current state.
- * @param {Object} action - The action object.
- * @returns {Object} The new state.
- */
 const initialState = {
-   user: null,
+   userData: null,
    loading: false,
-   error: null
+   error: null,
 };
 
 const userReducer = (state = initialState, action) => {
    switch (action.type) {
       case FETCH_USER_DATA_REQUEST:
-         return {
-            ...state,
-            loading: true,
-            error: null
-         };
+         return {...state, loading: true, error: null};
       case FETCH_USER_DATA_SUCCESS:
-         return {
-            ...state,
-            loading: false,
-            user: action.payload,
-            error: null
-         };
+         return {...state, loading: false, userData: action.payload, error: null};
       case FETCH_USER_DATA_FAILURE:
+         return {...state, loading: false, error: action.payload};
+
+      case VERIFY_EMAIL_REQUEST:
          return {
             ...state,
-            loading: false,
-            error: action.payload
+            emailVerification: {
+               loading: true,
+               success: false,
+               message: 'Verifying your email...',
+            },
+         };
+      case VERIFY_EMAIL_SUCCESS:
+         return {
+            ...state,
+            emailVerification: {
+               loading: false,
+               success: true,
+               message: action.payload,
+            },
+         };
+      case VERIFY_EMAIL_FAILURE:
+         return {
+            ...state,
+            emailVerification: {
+               loading: false,
+               success: false,
+               message: action.payload,
+            },
          };
       default:
          return state;
    }
 };
+
 
 export default userReducer;

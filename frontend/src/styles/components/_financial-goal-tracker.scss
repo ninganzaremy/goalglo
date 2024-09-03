@@ -1,123 +1,109 @@
+// Financial Goal Tracker
 .financial-goal-tracker {
-  background-color: $white;
-  border-radius: $border-radius;
-  box-shadow: $box-shadow;
-  padding: 2rem;
+   max-width: 600px;
+   margin: 0 auto;
+   padding: 20px;
 
-  h2 {
-    color: $primary-color;
-    margin-bottom: 1.5rem;
-  }
+   .goal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
 
-  .goal-tracker-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+      input {
+         padding: 8px;
+         font-size: 16px;
+      }
 
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: 1fr;
-    }
-  }
+      button {
+         @extend .btn-primary;
+      }
+   }
+
+   .goal-list {
+      list-style-type: none;
+      padding: 0;
+
+      .goal-item {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         padding: 10px;
+         border-bottom: 1px solid $border-color;
+
+         .goal-actions {
+            display: flex;
+            gap: 10px;
+
+            button {
+               background-color: $error-color;
+               color: $white;
+               padding: 5px 10px;
+               font-size: 14px;
+            }
+         }
+      }
+   }
 }
 
-.goal-list {
-  h3 {
-    color: $secondary-color;
-    margin-bottom: 1rem;
-  }
+// Service Booking
+.service-booking {
+   max-width: 400px;
+   margin: 0 auto;
+   padding: 20px;
 
-  ul {
-    list-style-type: none;
-    padding: 0;
-  }
+   .booking-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
 
-  li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem;
-    border-bottom: 1px solid $border-color;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+      select,
+      input {
+         padding: 8px;
+         font-size: 16px;
+      }
 
-    &:hover {
-      background-color: lighten($primary-color, 35%);
-    }
-  }
-
-  .goal-name {
-    font-weight: bold;
-  }
-
-  .goal-amount, .goal-date {
-    color: $text-secondary;
-  }
+      button {
+         @extend .btn-primary;
+      }
+   }
 }
 
-.goal-form {
-  h3 {
-    color: $secondary-color;
-    margin-bottom: 1rem;
-  }
+// Appointment List
+.appointment-list {
+   max-width: 600px;
+   margin: 0 auto;
+   padding: 20px;
 
-  .form-group {
-    margin-bottom: 1rem;
-  }
+   ul {
+      list-style-type: none;
+      padding: 0;
+   }
 
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
+   .appointment-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid $border-color;
 
-  input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid $border-color;
-    border-radius: $border-radius;
-
-    &:focus {
-      outline: none;
-      border-color: $primary-color;
-    }
-  }
-
-  .btn-primary {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: $primary-color;
-    color: $white;
-    border: none;
-    border-radius: $border-radius;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-
-    &:hover {
-      background-color: darken($primary-color, 10%);
-    }
-  }
+      button {
+         background-color: $error-color;
+         color: $white;
+         padding: 5px 10px;
+         font-size: 14px;
+      }
+   }
 }
 
-.goal-progress {
-  h3 {
-    color: $secondary-color;
-    margin-bottom: 1rem;
-  }
+// Common styles
+.loading,
+.error {
+   text-align: center;
+   padding: 20px;
+   font-size: 18px;
+}
 
-  .progress-bar {
-    height: 20px;
-    background-color: lighten($primary-color, 35%);
-    border-radius: $border-radius;
-    overflow: hidden;
-    margin-bottom: 1rem;
-  }
-
-  .progress {
-    height: 100%;
-    background-color: $primary-color;
-    transition: width 0.3s ease;
-  }
-
-  p {
-    margin-bottom: 0.5rem;
-  }
+.error {
+   color: $error-color;
 }
