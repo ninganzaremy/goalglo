@@ -1,10 +1,12 @@
 
 /*
- * ContactInfo component
- * This component displays contact information, including address, phone number, and email.
- * It also includes social media links for the user to connect with them.
- * The component is styled using the CSS module 'contact-info.module.css'.
- */
+ContactInfo.jsx
+
+This component represents the contact information section of a website.
+It displays the address, phone number, and email address along with
+social media links.
+
+*/
 
 const ContactInfo = () => {
    return (

@@ -1,40 +1,40 @@
-import {useEffect, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {addGoal, deleteGoal, fetchGoals, updateGoal} from '../../redux/actions/goalActions';
-import GoalList from './GoalList';
-import GoalForm from './GoalForm';
-import GoalProgress from './GoalProgress';
+import {useEffect, useState} from "react";
+import {useDispatch, useSelector} from "react-redux";
+import {addGoal, deleteGoal, fetchGoals, updateGoal,} from "../../redux/actions/goalActions";
+import GoalForm from "./GoalForm.jsx";
 
 /**
- * Component for tracking financial goals.
- * @returns {JSX.Element}
- * @constructor
+ * FinancialGoalTracker component
+ * This component manages the financial goals for the user.
+ * It fetches the goals from the Redux store, allows adding new goals,
+ * updates existing goals, and deletes goals.
+ * The component also handles loading and error states.
  */
 const FinancialGoalTracker = () => {
    const dispatch = useDispatch();
-   const { goals, loading, error } = useSelector(state => state.goals);
-   const [selectedGoal, setSelectedGoal] = useState(null);
+   const {goals, loading, error} = useSelector((state) => state.goals);
+   const [newGoal, setNewGoal] = useState({
+      name: "",
+      targetAmount: "",
+      deadline: "",
+   });
 
    useEffect(() => {
       dispatch(fetchGoals());
    }, [dispatch]);
 
-   const handleAddGoal = (newGoal) => {
+   const handleAddGoal = (e) => {
+      e.preventDefault();
       dispatch(addGoal(newGoal));
+      setNewGoal({name: "", targetAmount: "", deadline: ""});
    };
 
-   const handleUpdateGoal = (updatedGoal) => {
-      dispatch(updateGoal(updatedGoal));
-      setSelectedGoal(null);
+   const handleUpdateGoal = (id, updatedGoal) => {
+      dispatch(updateGoal(id, updatedGoal));
    };
 
-   const handleDeleteGoal = (goalId) => {
-      dispatch(deleteGoal(goalId));
-      setSelectedGoal(null);
-   };
-
-   const handleSelectGoal = (goal) => {
-      setSelectedGoal(goal);
+   const handleDeleteGoal = (id) => {
+      dispatch(deleteGoal(id));
    };
 
    if (loading) return <div className="loading">Loading goals...</div>;
@@ -42,25 +42,33 @@ const FinancialGoalTracker = () => {
 
    return (
       <div className="financial-goal-tracker">
-         <h2>Financial Goal Tracker</h2>
-         <div className="goal-tracker-content">
-            <div className="goal-list-container">
-               <GoalList
-                  goals={goals}
-                  onSelectGoal={handleSelectGoal}
-                  onDeleteGoal={handleDeleteGoal}
-               />
-            </div>
-            <div className="goal-form-container">
-               <GoalForm
-                  onSubmit={selectedGoal ? handleUpdateGoal : handleAddGoal}
-                  initialGoal={selectedGoal}
-               />
-               {selectedGoal && (
-                  <GoalProgress goal={selectedGoal} />
-               )}
-            </div>
-         </div>
+         <h2>Financial Goals</h2>
+         <GoalForm/>
+         <ul className="goal-list">
+            {goals.map((goal) => (
+               <li key={goal.id} className="goal-item">
+                  <span>
+                     {goal.name} - ${goal.targetAmount} by{" "}
+                     {new Date(goal.deadline).toLocaleDateString()}
+                  </span>
+                  <div className="goal-actions">
+                     <button
+                        onClick={() =>
+                           handleUpdateGoal(goal.id, {
+                              ...goal,
+                              targetAmount: goal.targetAmount + 100,
+                           })
+                        }
+                     >
+                        Increase Target
+                     </button>
+                     <button onClick={() => handleDeleteGoal(goal.id)}>
+                        Delete
+                     </button>
+                  </div>
+               </li>
+            ))}
+         </ul>
       </div>
    );
 };

@@ -1,6 +1,7 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {loginUser} from "../redux/actions/loginAction.js";
+import {useNavigate} from "react-router-dom";
 
 /**
  * Login component
@@ -11,12 +12,25 @@ const LoginPage = () => {
    const [username, setUsername] = useState('');
    const [password, setPassword] = useState('');
    const dispatch = useDispatch();
-   const {loading, error} = useSelector(state => state.login);
+   const navigate = useNavigate();
+   const {loading, error, isAuthenticated} = useSelector(state => state.auth);
 
-   const handleSubmit = (e) => {
+   const handleSubmit = async (e) => {
       e.preventDefault();
-      dispatch(loginUser(username, password));
+      try {
+         await dispatch(loginUser({username, password}));
+         // If login is successful, navigate to dashboard
+         navigate('/dashboard');
+      } catch (err) {
+         console.error('Login error:', err);
+      }
    };
+
+   useEffect(() => {
+      if (isAuthenticated) {
+         navigate('/dashboard');
+      }
+   }, [isAuthenticated, navigate]);
 
    return (
       <div className="page login-page">

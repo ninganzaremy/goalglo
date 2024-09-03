@@ -2,16 +2,16 @@ package com.goalglo.backend.controllers;
 
 import com.goalglo.backend.dto.BlogPostDTO;
 import com.goalglo.backend.entities.BlogPost;
+import com.goalglo.backend.entities.User;
 import com.goalglo.backend.services.BlogPostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * REST controller for managing blog posts.
@@ -39,11 +39,11 @@ public class BlogPostController {
     * @return a ResponseEntity containing the created blog post DTO and HTTP status CREATED
     */
    @PostMapping
-   public ResponseEntity<BlogPostDTO> createBlogPost(@RequestBody BlogPostDTO blogPostDTO) {
-      BlogPost blogPost = new BlogPost(blogPostDTO);
-      BlogPostDTO createdBlogPostDTO = blogPostService.createBlogPost(blogPost);
+   public ResponseEntity<BlogPostDTO> createBlogPost(@RequestBody BlogPostDTO blogPostDTO, @AuthenticationPrincipal User currentUser) {
+      BlogPostDTO createdBlogPostDTO = blogPostService.createBlogPost(blogPostDTO, currentUser);
       return new ResponseEntity<>(createdBlogPostDTO, HttpStatus.CREATED);
    }
+
    /**
     * Retrieves a blog post by its ID.
     *

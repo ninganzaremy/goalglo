@@ -8,6 +8,7 @@ import com.goalglo.backend.repositories.TimeSlotRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +31,7 @@ public class TimeSlotService {
     * @return List of available TimeSlotDTOs.
     */
    public List<TimeSlotDTO> getAvailableSlots() {
-      return timeSlotRepository.findAllByBookedFalse()
+      return timeSlotRepository.findByBookedFalseAndEndTimeAfterOrderByStartTimeAsc(LocalDateTime.now())
          .stream()
          .map(TimeSlotDTO::new)
          .collect(Collectors.toList());

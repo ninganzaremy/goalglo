@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.UUID;
 
 /**
@@ -16,7 +17,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
-
 
    private final UserService userService;
 
@@ -34,13 +34,15 @@ public class UserController {
     * Registers a new user in the system.
     *
     * @param user the user to be registered
-    * @return a ResponseEntity containing the registered user DTO and HTTP status CREATED
+    * @return a ResponseEntity containing the registered user DTO and HTTP status
+    *         CREATED
     */
    @PostMapping("/register")
    public ResponseEntity<UserDTO> registerUser(@RequestBody User user) {
       UserDTO registeredUser = userService.registerUser(user);
       return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
    }
+
    /**
     * Verifies the user's email using the provided token.
     *
@@ -56,16 +58,19 @@ public class UserController {
          return ResponseEntity.badRequest().body("Invalid or expired token.");
       }
    }
+
    /**
     * Authenticates a user by checking their email and password.
     *
     * @param userDTO the user attempting to log in
-    * @return a ResponseEntity containing the authenticated user DTO and HTTP status OK,
+    * @return a ResponseEntity containing the authenticated user DTO and HTTP
+    *         status OK,
     *         or HTTP status UNAUTHORIZED if authentication fails
     */
    @PostMapping("/login")
    public ResponseEntity<UserDTO> loginUser(@RequestBody UserDTO userDTO) {
-      return userService.loginUser(userDTO.getIdentifier(), userDTO.getPassword())
+      String trimmedIdentifier = userDTO.getIdentifier().trim();
+      return userService.loginUser(trimmedIdentifier, userDTO.getPassword())
          .map(loggedInUserDTO -> new ResponseEntity<>(loggedInUserDTO, HttpStatus.OK))
          .orElseGet(() -> new ResponseEntity<>(HttpStatus.UNAUTHORIZED));
    }
@@ -84,11 +89,10 @@ public class UserController {
          .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
    }
 
-
-                                  /**
+   /**
     * Updates an existing user's information.
     *
-    * @param id the UUID of the user to update
+    * @param id   the UUID of the user to update
     * @param user the updated user information
     * @return a ResponseEntity containing the updated user DTO and HTTP status OK,
     *         or HTTP status NOT FOUND if the user does not exist
@@ -99,7 +103,6 @@ public class UserController {
          .map(userDTO -> new ResponseEntity<>(userDTO, HttpStatus.OK))
          .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
    }
-
 
    /**
     * Deletes a user by their ID.
@@ -114,5 +117,18 @@ public class UserController {
       return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
    }
 
-
+   /**
+    * Fetches user profile data.
+    *
+    * @param principal the authenticated user's principal
+    * @return a ResponseEntity containing the user DTO and HTTP status OK
+    */
+   @GetMapping("/profile")
+   public ResponseEntity<UserDTO> getUserProfile(Principal principal) {
+      if (principal == null) {
+         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+      }
+      UserDTO userDTO = userService.getUserProfile(principal.getName());
+      return ResponseEntity.ok(userDTO);
+   }
 }
