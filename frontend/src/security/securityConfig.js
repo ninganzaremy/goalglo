@@ -5,6 +5,7 @@
  * It uses environment variables to determine the current environment and configuration.
  */
 import CryptoJS from 'crypto-js';
+import {jwtDecode} from 'jwt-decode'
 
 const secretKey = import.meta.env.VITE_SECRET_KEY;
 const tokenItemName = import.meta.env.VITE_TOKEN_ITEM_NAME;
@@ -93,3 +94,50 @@ export const getApiUrl = () => isProduction()
  * @returns {boolean} True if Redux DevTools should be enabled, false otherwise.
  */
 export const shouldEnableDevTools = () => !isProduction();
+
+
+/**
+ * Decode a JWT token.
+ *
+ * @param {string} token - The JWT token to decode.
+ * @returns {Object|null} The decoded token payload, or null if the token is invalid.
+ */
+
+export const decodeJwtToken = (token) => {
+   try {
+      return jwtDecode(token);
+   } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+   }
+};
+
+export const isTokenExpired = (token) => {
+   try {
+      const decodedToken = jwtDecode(token);
+      return decodedToken.exp * 1000 < Date.now();
+   } catch (error) {
+      console.error('Error decoding token or checking expiration:', error);
+      return true;
+   }
+};
+
+/**
+ * Manage storage event listener.
+ *
+ * @param {string} action - The action to perform ('add' or 'remove').
+ * @param {Function} handler - The event handler function.
+ * @param key
+ * @param value
+ */
+export const manageStorageEventListener = (action, handler, key = null, value = null) => {
+   if (action === 'add') {
+      window.addEventListener('storage', handler);
+   } else if (action === 'remove') {
+      window.removeEventListener('storage', handler);
+   } else if (action === 'set' && key && value) {
+      localStorage.setItem(key, value);
+   } else {
+      console.warn('Invalid action. Use "add", "remove", or "set".');
+   }
+};

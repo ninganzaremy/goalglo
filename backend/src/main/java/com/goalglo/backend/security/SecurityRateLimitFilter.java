@@ -1,4 +1,4 @@
-package com.goalglo.backend.config;
+package com.goalglo.backend.security;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import jakarta.servlet.FilterChain;

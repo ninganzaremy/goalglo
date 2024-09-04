@@ -1,4 +1,4 @@
-import {LOGIN_FAILURE, LOGIN_REQUEST, LOGIN_SUCCESS} from '../actions/loginAction.js';
+import {CHECK_TOKEN_EXPIRATION, LOGIN_FAILURE, LOGIN_REQUEST, LOGIN_SUCCESS} from '../actions/loginAction.js';
 
 /**
  * @typedef {Object} AuthState
@@ -33,6 +33,11 @@ const loginReducer = (state = initialState, action) => {
          return {...state, loading: false, user: null, error: action.payload};
       case 'LOGOUT':
          return {...initialState};
+      case CHECK_TOKEN_EXPIRATION:
+         if (state.user && state.user.exp * 1000 < Date.now()) {
+            return {...initialState};
+         }
+         return state;
       default:
          return state;
    }

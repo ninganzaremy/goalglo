@@ -1,7 +1,8 @@
-package com.goalglo.backend.config;
+package com.goalglo.backend.security;
 
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.goalglo.backend.config.SecretConfig;
 import com.goalglo.backend.repositories.UserRepository;
-import com.goalglo.backend.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -37,10 +38,13 @@ public class SecurityConfig {
 
    private final UserRepository userRepository;
    private final SecretConfig secretConfig;
+   private final LoadingCache<String, Integer> requestCountsPerIpAddress;
 
-   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig) {
+
+   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig, LoadingCache<String, Integer> requestCountsPerIpAddress) {
       this.userRepository = userRepository;
       this.secretConfig = secretConfig;
+      this.requestCountsPerIpAddress = requestCountsPerIpAddress;
 
    }
 
@@ -70,6 +74,7 @@ public class SecurityConfig {
                .jwtAuthenticationConverter(jwtAuthenticationConverter())))
          .addFilterBefore(new JwtAuthenticationFilter(jwtDecoder), UsernamePasswordAuthenticationFilter.class)
          .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+         .addFilterBefore(new SecurityRateLimitFilter(requestCountsPerIpAddress), UsernamePasswordAuthenticationFilter.class)
          .logout(logout -> logout
             .logoutUrl("/logout")
             .logoutSuccessUrl("/")
