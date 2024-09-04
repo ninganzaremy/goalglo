@@ -1,7 +1,7 @@
-import {memo, useMemo} from "react";
-import {Link, useNavigate} from "react-router-dom";
-import {useDispatch, useSelector} from "react-redux";
-import {logoutUser} from "../../redux/actions/loginAction";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUser, checkAuthStatus } from "../../redux/actions/loginAction";
 import logo from "../../assets/images/vite.svg";
 
 /**
@@ -10,28 +10,29 @@ import logo from "../../assets/images/vite.svg";
  */
 const Header = () => {
    const dispatch = useDispatch();
-   const auth = useSelector(state => state.auth);
-   const {userData, loading: userLoading} = useSelector(state => state.user);
    const navigate = useNavigate();
+   const { isAuthenticated, user, loading } = useSelector(
+      (state) => state.auth
+   );
 
-   const {isAuthenticated, user, loading} = useMemo(() => ({
-      isAuthenticated: auth.isAuthenticated,
-      user: userData,
-      loading: auth.loading || userLoading
-   }), [auth.isAuthenticated, auth.loading, userData, userLoading]);
-
-   // console.log('Header render, auth state:', {isAuthenticated, user, loading});
+   useEffect(() => {
+      dispatch(checkAuthStatus());
+   }, [dispatch]);
 
    const handleLogout = () => {
       dispatch(logoutUser());
-      navigate('/');
+      navigate("/");
    };
+
+   if (loading) {
+      return <div>Loading...</div>;
+   }
 
    return (
       <header className="header">
          <div className="container">
             <Link to="/" className="logo">
-               <img src={logo} alt="GoalGlo Logo"/>
+               <img src={logo} alt="GoalGlo Logo" />
             </Link>
             <nav>
                <ul className="nav-links">
@@ -55,7 +56,9 @@ const Header = () => {
             <div className="auth-buttons">
                {isAuthenticated && user ? (
                   <>
-                     <span className="user-name">Welcome, {user.username}</span>
+                     <span className="user-name">
+                        Welcome, {user.firstName}
+                     </span>
                      <button
                         onClick={handleLogout}
                         className="btn btn-secondary"
@@ -85,4 +88,4 @@ const Header = () => {
    );
 };
 
-export default memo(Header);
+export default Header;

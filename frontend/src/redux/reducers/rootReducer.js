@@ -13,10 +13,8 @@ import appointmentsReducer from "./appointmentsReducer.js";
 import authReducer from "./authReducer.js";
 
 /**
- * Root Reducer
- *
- * Combines all reducers into a single reducer function.
- * Add additional reducers here as your application grows.
+ * Root reducer for the application.
+ * Combines all the reducers into a single root reducer.
  */
 const rootReducer = combineReducers({
    auth: authReducer,

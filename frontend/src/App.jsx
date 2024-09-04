@@ -15,11 +15,12 @@ import CreateBlogPostPage from "./pages/CreateBlogPostPage.jsx";
 import Header from "./components/layout/Header.jsx";
 import Footer from "./components/layout/Footer.jsx";
 import {useEffect} from "react";
-import {checkAuthStatus} from "./redux/actions/loginAction.js";
+import {logoutUser} from "./redux/actions/loginAction.js";
 import {useDispatch} from "react-redux";
 import EmailVerificationPage from "./pages/EmailVerificationPage.jsx";
 
 import './styles/main.scss';
+import {manageStorageEventListener} from "./security/securityConfig";
 
 /**
  * The main App component.
@@ -30,7 +31,16 @@ function App() {
    const dispatch = useDispatch();
 
    useEffect(() => {
-      dispatch(checkAuthStatus());
+      const handleStorageChange = (e) => {
+         if (e.key === 'logout') {
+            dispatch(logoutUser());
+         }
+      };
+      manageStorageEventListener("add", handleStorageChange)
+
+      return () => {
+         manageStorageEventListener("remove", handleStorageChange)
+      };
    }, [dispatch]);
 
    return (

@@ -37,10 +37,13 @@ public class SecurityConfig {
 
    private final UserRepository userRepository;
    private final SecretConfig secretConfig;
+   private final LoadingCache<String, Integer> requestCountsPerIpAddress;
 
-   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig) {
+
+   public SecurityConfig(UserRepository userRepository, SecretConfig secretConfig, LoadingCache<String, Integer> requestCountsPerIpAddress) {
       this.userRepository = userRepository;
       this.secretConfig = secretConfig;
+      this.requestCountsPerIpAddress = requestCountsPerIpAddress;
 
    }
 
@@ -70,6 +73,7 @@ public class SecurityConfig {
                .jwtAuthenticationConverter(jwtAuthenticationConverter())))
          .addFilterBefore(new JwtAuthenticationFilter(jwtDecoder), UsernamePasswordAuthenticationFilter.class)
          .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+         .addFilterBefore(new SecurityRateLimitFilter(requestCountsPerIpAddress), UsernamePasswordAuthenticationFilter.class)
          .logout(logout -> logout
             .logoutUrl("/logout")
             .logoutSuccessUrl("/")

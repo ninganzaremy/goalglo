@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {getApiUrl, getEncryptedItem} from "../utils/envConfig.js";
+import {getApiUrl, getEncryptedItem} from "../security/securityConfig";
 
 /**
  * Axios instance configured with the base URL and credentials.

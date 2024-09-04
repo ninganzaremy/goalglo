@@ -1,8 +1,6 @@
-import {useEffect, useState} from "react";
-import {useDispatch, useSelector} from "react-redux";
-import {useNavigate} from "react-router-dom";
-import {fetchUserData} from "../redux/actions/userActions";
-import {getEncryptedItem} from "../utils/envConfig";
+import {useState} from "react";
+import {useSelector} from "react-redux";
+import {Navigate} from "react-router-dom";
 import FinancialGoalTracker from "../components/goals/FinancialGoalTracker";
 import AccountSummary from "../components/dashboard/AccountSummary";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
@@ -15,24 +13,13 @@ import AppointmentList from "../components/appointments/AppointmentList";
  * It displays the account summary, recent transactions, and a financial goal tracker.
  */
 const UserDashboardPage = () => {
-   const {userData, loading, error} = useSelector((state) => state.user);
-   const dispatch = useDispatch();
-   const navigate = useNavigate();
+   const {user, isAuthenticated, loading} = useSelector(
+      (state) => state.auth
+   );
    const [activeTab, setActiveTab] = useState("summary");
 
-   useEffect(() => {
-      const token = getEncryptedItem();
-      if (!token) {
-         navigate("/login");
-      } else {
-         dispatch(fetchUserData());
-      }
-   }, [dispatch, navigate]);
-
-
    if (loading) return <div>Loading...</div>;
-   if (error) return <div>Error: {error}</div>;
-   if (!userData) return null;
+   if (!isAuthenticated || !user) return <Navigate to="/login" replace/>;
 
    const renderActiveTab = () => {
       switch (activeTab) {
@@ -56,7 +43,7 @@ const UserDashboardPage = () => {
 
    return (
       <div className="user-dashboard">
-         <h1>Welcome, {userData.name}</h1>
+         <h1>Welcome, {user.firstName}</h1>
          <div className="dashboard-tabs">
             <button onClick={() => setActiveTab("summary")}>Summary</button>
             <button onClick={() => setActiveTab("goals")}>Goals</button>

@@ -1,6 +1,6 @@
 import {configureStore} from '@reduxjs/toolkit';
 import rootReducer from './reducers/rootReducer';
-import {shouldEnableDevTools} from '../utils/envConfig.js';
+import {shouldEnableDevTools} from '../security/securityConfig';
 
 /**
  * Configure the Redux store
