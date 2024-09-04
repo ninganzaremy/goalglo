@@ -4,7 +4,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -12,6 +15,9 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -22,16 +28,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   }
 
   @Override
-  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+  protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                  @NonNull HttpServletResponse response,
+                                  @NonNull FilterChain filterChain)
       throws ServletException, IOException {
     String token = extractJwtFromRequest(request);
     if (token != null) {
       try {
         Jwt jwt = jwtDecoder.decode(token);
         String username = jwt.getSubject();
+        List<String> roles = jwt.getClaimAsStringList("roles");
+
         if (username != null) {
-          UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username, null,
-              null);
+          // Convert roles to GrantedAuthority objects
+          Collection<GrantedAuthority> authorities = roles.stream()
+             .map(SimpleGrantedAuthority::new)
+             .collect(Collectors.toList());
+
+          // Create authentication token with username and roles
+          UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+             username, null, authorities);
+
+          // Set the authentication in the security context
           SecurityContextHolder.getContext().setAuthentication(authentication);
         }
       } catch (JwtException e) {

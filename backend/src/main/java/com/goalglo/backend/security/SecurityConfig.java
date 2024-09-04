@@ -1,7 +1,8 @@
-package com.goalglo.backend.config;
+package com.goalglo.backend.security;
 
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.goalglo.backend.config.SecretConfig;
 import com.goalglo.backend.repositories.UserRepository;
-import com.goalglo.backend.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

@@ -1,5 +1,6 @@
 package com.goalglo.backend.tokens;
 
+import com.goalglo.backend.entities.User;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -17,13 +18,14 @@ public class JwtTokenUtil {
       this.jwtEncoder = jwtEncoder;
    }
 
-   public String generateJwtToken(String subject, Set<String> roles, long tokenValidity) {
+   public String generateJwtToken(User user, Set<String> roles, long tokenValidity) {
       Instant now = Instant.now();
       JwtClaimsSet claimsSet = JwtClaimsSet.builder()
-         .issuer("self") 
+         .issuer("self")
          .issuedAt(now)
          .expiresAt(now.plusSeconds(tokenValidity))
-         .subject(subject)
+         .subject(user.getUsername())
+         .claim("firstName", user.getFirstName())
          .claim("roles", roles)
          .build();
       JwsHeader jwsHeader = JwsHeader.with(() -> "HS512").type("JWT").build();

@@ -168,7 +168,7 @@ public class UserService {
             throw new RuntimeException("Email not verified");
          }
          if (passwordEncoder.matches(password, user.getPassword())) {
-            String jwtToken = jwtTokenUtil.generateJwtToken(user.getUsername(),
+            String jwtToken = jwtTokenUtil.generateJwtToken(user,
                user.getRoles().stream()
                   .map(Role::getName)
                   .collect(Collectors.toSet()),
