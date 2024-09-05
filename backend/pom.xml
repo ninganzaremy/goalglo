@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.goalglo</groupId>
-    <artifactId>backend</artifactId>
+    <artifactId>goalglo</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>backend</name>
-    <description>backend</description>
+    <name>goalglo</name>
+    <description>goalglo</description>
     <url/>
     <licenses>
         <license/>
