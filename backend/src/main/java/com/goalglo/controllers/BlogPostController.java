@@ -2,14 +2,17 @@ package com.goalglo.controllers;
 
 import com.goalglo.dto.BlogPostDTO;
 import com.goalglo.entities.BlogPost;
-import com.goalglo.entities.User;
 import com.goalglo.services.BlogPostService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,6 +24,7 @@ import java.util.UUID;
 public class BlogPostController {
 
    private final BlogPostService blogPostService;
+   Logger log = LoggerFactory.getLogger(BlogPostController.class);
 
    /**
     * Constructs a new BlogPostController with the specified BlogPostService.
@@ -36,13 +40,19 @@ public class BlogPostController {
     * Creates a new blog post.
     *
     * @param blogPostDTO the blog post data transfer object
-    * @return a ResponseEntity containing the created blog post DTO and HTTP status CREATED
+    * @return a ResponseEntity containing the created blog post DTO and HTTP status
+    *         CREATED
     */
    @PostMapping
-   public ResponseEntity<BlogPostDTO> createBlogPost(@RequestBody BlogPostDTO blogPostDTO, @AuthenticationPrincipal User currentUser) {
-      BlogPostDTO createdBlogPostDTO = blogPostService.createBlogPost(blogPostDTO, currentUser);
+   public ResponseEntity<BlogPostDTO> createBlogPost(
+      BlogPostDTO blogPostDTO,
+      Authentication authentication,
+      @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
+
+      BlogPostDTO createdBlogPostDTO = blogPostService.createBlogPost(blogPostDTO, authentication, image);
       return new ResponseEntity<>(createdBlogPostDTO, HttpStatus.CREATED);
    }
+
 
    /**
     * Retrieves a blog post by its ID.
@@ -61,7 +71,8 @@ public class BlogPostController {
    /**
     * Retrieves all blog posts.
     *
-    * @return a ResponseEntity containing a list of all blog post DTOs and HTTP status OK
+    * @return a ResponseEntity containing a list of all blog post DTOs and HTTP
+    *         status OK
     */
    @GetMapping
    public ResponseEntity<List<BlogPostDTO>> getAllBlogPosts() {
@@ -72,9 +83,10 @@ public class BlogPostController {
    /**
     * Updates an existing blog post.
     *
-    * @param id the UUID of the blog post to update
+    * @param id          the UUID of the blog post to update
     * @param blogPostDTO the updated blog post data transfer object
-    * @return a ResponseEntity containing the updated blog post DTO and HTTP status OK,
+    * @return a ResponseEntity containing the updated blog post DTO and HTTP status
+    *         OK,
     *         or HTTP status NOT FOUND if the blog post does not exist
     */
    @PutMapping("/{id}")
@@ -84,11 +96,13 @@ public class BlogPostController {
          .map(updatedBlogPostDTO -> new ResponseEntity<>(updatedBlogPostDTO, HttpStatus.OK))
          .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
    }
+
    /**
     * Deletes a blog post by its ID.
     *
     * @param id the UUID of the blog post to delete
-    * @return a ResponseEntity with HTTP status NO_CONTENT if the blog post was deleted,
+    * @return a ResponseEntity with HTTP status NO_CONTENT if the blog post was
+    *         deleted,
     *         or HTTP status NOT FOUND if the blog post does not exist
     */
    @DeleteMapping("/{id}")

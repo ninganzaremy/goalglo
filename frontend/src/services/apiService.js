@@ -26,7 +26,9 @@ apiService.interceptors.request.use(
       if (authToken) {
          config.headers['Authorization'] = `Bearer ${authToken}`;
       }
-      config.headers['Content-Type'] = 'application/json';
+      if (!config.headers['Content-Type']) {
+         config.headers['Content-Type'] = 'application/json';
+      }
       return config;
    },
    (error) => {
