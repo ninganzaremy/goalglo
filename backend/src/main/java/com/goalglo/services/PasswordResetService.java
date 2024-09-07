@@ -1,5 +1,6 @@
 package com.goalglo.services;
 
+import com.goalglo.aws.AwsSesService;
 import com.goalglo.common.ResourceNotFoundException;
 import com.goalglo.common.TokenCommons;
 import com.goalglo.entities.EmailVerificationToken;
@@ -20,18 +21,18 @@ public class PasswordResetService {
    private final UserRepository userRepository;
    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
    private final EmailTemplateService emailTemplateService;
-   private final AwsSesEmailService awsSesEmailService;
+   private final AwsSesService awsSesService;
    private final PasswordEncoder passwordEncoder;
    private final UuidTokenService uuidTokenService;
    private final SecretConfig secretConfig;
 
 
    @Autowired
-   public PasswordResetService(UserRepository userRepository, EmailVerificationTokenRepository emailVerificationTokenRepository, EmailTemplateService emailTemplateService, AwsSesEmailService awsSesEmailService, PasswordEncoder passwordEncoder, UuidTokenService uuidTokenService, SecretConfig secretConfig) {
+   public PasswordResetService(UserRepository userRepository, EmailVerificationTokenRepository emailVerificationTokenRepository, EmailTemplateService emailTemplateService, AwsSesService awsSesService, PasswordEncoder passwordEncoder, UuidTokenService uuidTokenService, SecretConfig secretConfig) {
       this.userRepository = userRepository;
       this.emailVerificationTokenRepository = emailVerificationTokenRepository;
       this.emailTemplateService = emailTemplateService;
-      this.awsSesEmailService = awsSesEmailService;
+      this.awsSesService = awsSesService;
       this.passwordEncoder = passwordEncoder;
       this.uuidTokenService = uuidTokenService;
       this.secretConfig = secretConfig;
@@ -65,9 +66,9 @@ public class PasswordResetService {
 
       String subject = emailTemplateService.getSubjectByTemplateName(passwordResetEmailTemplate);
       String body = emailTemplateService.getBodyByTemplateName(passwordResetEmailTemplate)
-         .replace("{reset_url}", domain + "/reset-password?token=" + token);
+         .replace("{reset_url}", domain + "reset-password?token=" + token);
 
-      awsSesEmailService.sendEmail(user.getEmail(), subject, body);
+      awsSesService.sendEmail(user.getEmail(), subject, body);
    }
 
    /**

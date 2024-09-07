@@ -1,5 +1,6 @@
 package com.goalglo.services;
 
+import com.goalglo.aws.AwsSesService;
 import com.goalglo.common.ResourceNotFoundException;
 import com.goalglo.common.TokenCommons;
 import com.goalglo.dto.AppointmentDTO;
@@ -31,7 +32,7 @@ public class UserService {
    private final BCryptPasswordEncoder passwordEncoder;
    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
    private final EmailTemplateService emailTemplateService;
-   private final AwsSesEmailService awsSesEmailService;
+   private final AwsSesService awsSesService;
    private final UuidTokenService uuidTokenService;
    private final SecretConfig secretConfig;
    private final JwtTokenUtil jwtTokenUtil;
@@ -40,13 +41,13 @@ public class UserService {
    @Autowired
    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder,
                       EmailVerificationTokenRepository emailVerificationTokenRepository, EmailTemplateService emailTemplateService,
-                      AwsSesEmailService awsSesEmailService, UuidTokenService uuidTokenService, SecretConfig secretConfig,
+                      AwsSesService awsSesService, UuidTokenService uuidTokenService, SecretConfig secretConfig,
                       JwtTokenUtil jwtTokenUtil, RoleRepository roleRepository) {
       this.userRepository = userRepository;
       this.passwordEncoder = passwordEncoder;
       this.emailVerificationTokenRepository = emailVerificationTokenRepository;
       this.emailTemplateService = emailTemplateService;
-      this.awsSesEmailService = awsSesEmailService;
+      this.awsSesService = awsSesService;
       this.uuidTokenService = uuidTokenService;
       this.secretConfig = secretConfig;
       this.jwtTokenUtil = jwtTokenUtil;
@@ -125,7 +126,7 @@ public class UserService {
       String body = emailTemplateService.getBodyByTemplateName(emailVerificationTemplate)
          .replace("{verificationUrl}", domain + "/verify-email?token=" + token);
 
-      awsSesEmailService.sendEmail(user.getEmail(), subject, body);
+      awsSesService.sendEmail(user.getEmail(), subject, body);
    }
 
    /**
