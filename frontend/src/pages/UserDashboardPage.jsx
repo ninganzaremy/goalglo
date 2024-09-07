@@ -6,6 +6,8 @@ import AccountSummary from "../components/dashboard/AccountSummary";
 import RecentTransactions from "../components/dashboard/RecentTransactions";
 import ServiceBooking from "../components/services/ServiceBooking";
 import AppointmentList from "../components/appointments/AppointmentList";
+import {decryptData, userSecuredRole} from "../security/securityConfig.js";
+import CreateBlogPostPage from "./CreateBlogPostPage.jsx";
 
 /**
  * UserDashboard component
@@ -17,6 +19,7 @@ const UserDashboardPage = () => {
       (state) => state.auth
    );
    const [activeTab, setActiveTab] = useState("summary");
+   const canCreateBlogPosts = user && user.roles && (user.roles.includes(decryptData(userSecuredRole())));
 
    if (loading) return <div>Loading...</div>;
    if (!isAuthenticated || !user) return <Navigate to="/login" replace/>;
@@ -36,6 +39,8 @@ const UserDashboardPage = () => {
             return <ServiceBooking/>;
          case "appointments":
             return <AppointmentList/>;
+         case "createBlog":
+            return <CreateBlogPostPage/>;
          default:
             return null;
       }
@@ -53,6 +58,9 @@ const UserDashboardPage = () => {
             <button onClick={() => setActiveTab("appointments")}>
                Appointments
             </button>
+            {canCreateBlogPosts && (
+               <button onClick={() => setActiveTab("createBlog")}>Create Blog Post</button>
+            )}
          </div>
          <div className="dashboard-content">{renderActiveTab()}</div>
       </div>

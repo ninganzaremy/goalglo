@@ -57,18 +57,20 @@ export const createBlogPost = (postData) => {
       dispatch({ type: CREATE_BLOG_POST_REQUEST });
 
       try {
-         const response = await apiService.post('/blog-posts', postData);
+         const response = await apiService.post('/blog-posts', postData, {
+            headers: {
+               "Content-Type": "multipart/form-data",
+            }
+         });
          dispatch({
             type: CREATE_BLOG_POST_SUCCESS,
             payload: response.data
          });
-         return response.data;
       } catch (error) {
          dispatch({
             type: CREATE_BLOG_POST_FAILURE,
             payload: error.response ? error.response.data.message : 'An unexpected error occurred'
          });
-         throw error;
       }
    };
 };

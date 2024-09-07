@@ -26,7 +26,7 @@ const encryptData = (data) => {
  * @param {string} encryptedData - The encrypted data to decrypt.
  * @returns {string} The decrypted plaintext data.
  */
-const decryptData = (encryptedData) => {
+export const decryptData = (encryptedData) => {
    return CryptoJS.AES.decrypt(encryptedData, secretKey).toString(CryptoJS.enc.Utf8);
 };
 
@@ -140,4 +140,13 @@ export const manageStorageEventListener = (action, handler, key = null, value = 
    } else {
       console.warn('Invalid action. Use "add", "remove", or "set".');
    }
+};
+
+/**
+ * Get the secured role from environment variables.
+ *
+ * @returns {string} The secured role.
+ */
+export const userSecuredRole = () => {
+   return encryptData(import.meta.env.VITE_SECURED_ROLE)
 };

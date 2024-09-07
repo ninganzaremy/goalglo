@@ -8,11 +8,11 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 @Configuration
-public class AwsSesClient {
+public class AwsSesService {
 
    private final SecretConfig secretConfig;
 
-   public AwsSesClient(SecretConfig secretConfig) {
+   public AwsSesService(SecretConfig secretConfig) {
       this.secretConfig = secretConfig;
    }
 
@@ -23,7 +23,7 @@ public class AwsSesClient {
 
       return software.amazon.awssdk.services.ses.SesClient.builder()
          .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
-         .region(Region.of(secretConfig.getRegion()))
+         .region(Region.of(secretConfig.getAwsRegion()))
          .build();
    }
 }

@@ -26,8 +26,14 @@ public class BlogPost {
    @Column(nullable = false)
    private String title;
 
+   @Column(nullable = false, unique = true)
+   private String slug;
+
    @Column(nullable = false, columnDefinition = "TEXT")
    private String content;
+
+   @Column(name = "image_url")
+   private String imageUrl;
 
    @ManyToOne
    @JoinColumn(name = "author_id")
@@ -39,13 +45,25 @@ public class BlogPost {
    @CreationTimestamp
    private LocalDateTime createdAt;
 
+   @Column(name = "published_at")
+   private LocalDateTime publishedAt;
+
    @UpdateTimestamp
    private LocalDateTime updatedAt;
 
    public BlogPost(BlogPostDTO blogPostDTO) {
       this.title = blogPostDTO.getTitle();
+      this.slug = blogPostDTO.getSlug();
       this.content = blogPostDTO.getContent();
+      this.imageUrl = blogPostDTO.getImageUrl();
       this.published = blogPostDTO.isPublished();
+   }
+
+   public void setPublished(boolean published) {
+      this.published = published;
+      if (published && this.publishedAt == null) {
+         this.publishedAt = LocalDateTime.now();
+      }
    }
    public BlogPost() {
    }

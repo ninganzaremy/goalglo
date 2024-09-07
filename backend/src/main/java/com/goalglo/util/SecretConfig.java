@@ -43,7 +43,13 @@ public class SecretConfig {
    private String secretAccessKey;
 
    @Value("${ECR_REGION}")
-   private String region;
+   private String awsRegion;
+
+   @Value("${DEV_BUCKET_NAME}")
+   private String awsDevBucketName;
+
+   @Value("${PROD_BUCKET_NAME}")
+   private String awsProdBucketName;
 
    @Value("${AWS_SES_EMAIL}")
    private String awsSesEmail;
@@ -70,8 +76,16 @@ public class SecretConfig {
       return Arrays.asList(devDomain, prodDomain);
    }
 
+   public boolean isProd() {
+      return "prod".equalsIgnoreCase(environment.getProperty("spring.profiles.active", "dev"));
+   }
+
    public String getActiveDomain() {
-      return "dev".equalsIgnoreCase(environment.getProperty("spring.profiles.active", "dev")) ? devDomain : prodDomain;
+      return isProd() ? prodDomain : devDomain;
+   }
+
+   public String getAwsBucketName() {
+      return isProd() ? awsProdBucketName : awsDevBucketName;
    }
 
 }

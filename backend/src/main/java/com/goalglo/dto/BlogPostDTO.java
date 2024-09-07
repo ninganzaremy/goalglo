@@ -19,16 +19,24 @@ public class BlogPostDTO {
    private String content;
    private UUID authorId;
    private boolean published;
+   private String slug;
+   private String imageUrl;
    private LocalDateTime createdAt;
    private LocalDateTime updatedAt;
+
    public BlogPostDTO(BlogPost blogPost) {
       this.id = blogPost.getId();
       this.title = blogPost.getTitle();
       this.content = blogPost.getContent();
-      this.authorId = blogPost.getAuthor().getId();
+      this.authorId = blogPost.getAuthor() != null ? blogPost.getAuthor().getId() : null;
       this.published = blogPost.isPublished();
+      this.slug = blogPost.getSlug();
+      this.imageUrl = blogPost.getImageUrl();
       this.createdAt = blogPost.getCreatedAt();
       this.updatedAt = blogPost.getUpdatedAt();
    }
-   public BlogPostDTO() {}
+
+   public BlogPostDTO() {
+   }
+
 }
