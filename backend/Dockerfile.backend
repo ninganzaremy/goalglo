@@ -10,4 +10,4 @@ ARG DEPENDENCY=target/dependency
 COPY --from=builder /app/${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=builder /app/${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=builder /app/${DEPENDENCY}/BOOT-INF/classes /app
-ENTRYPOINT ["java","-cp","app:app/lib/*","com.goalglo.BackendApplication"]
+ENTRYPOINT ["java","-cp","app:app/lib/*","com.goalglo.GoalGloApplication"]

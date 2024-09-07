@@ -13,17 +13,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class LoggingAspect {
 
-   @Before("execution(* com.goalglo.backend..*(..))")
+   @Before("execution(* com.goalglo..*(..))")
    public void logMethodEntry(JoinPoint joinPoint) {
       logMethod(joinPoint, "Entering", joinPoint.getArgs(), null);
    }
 
-   @AfterReturning(pointcut = "execution(* com.goalglo.backend..*(..))", returning = "result")
+   @AfterReturning(pointcut = "execution(* com.goalglo..*(..))", returning = "result")
    public void logMethodExit(JoinPoint joinPoint, Object result) {
       logMethod(joinPoint, "Exiting", result, null);
    }
 
-   @AfterThrowing(pointcut = "execution(* com.goalglo.backend..*(..))", throwing = "ex")
+   @AfterThrowing(pointcut = "execution(* com.goalglo..*(..))", throwing = "ex")
    public void logMethodException(JoinPoint joinPoint, Throwable ex) {
       logMethod(joinPoint, "Exception", null, ex);
    }
