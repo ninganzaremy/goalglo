@@ -1,6 +1,7 @@
 package com.goalglo.services;
 
 import com.goalglo.common.ResourceNotFoundException;
+import com.goalglo.config.SecretConfig;
 import com.goalglo.dto.InvoiceDTO;
 import com.goalglo.entities.InvoiceEntity;
 import com.goalglo.entities.Payment;
@@ -8,7 +9,6 @@ import com.goalglo.entities.User;
 import com.goalglo.repositories.InvoiceRepository;
 import com.goalglo.repositories.PaymentRepository;
 import com.goalglo.repositories.UserRepository;
-import com.goalglo.util.SecretConfig;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
@@ -49,7 +49,7 @@ public class InvoiceService {
     * @throws StripeException If an error occurs while interacting with Stripe API.
     */
    public InvoiceDTO createAndSendInvoice(UUID paymentId, UUID userId) throws StripeException {
-      Stripe.apiKey = secretConfig.getStripeApiKey();
+      Stripe.apiKey = secretConfig.getStripe().getApiKey();
       Payment payment = paymentRepository.findById(paymentId)
          .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
       User user = userRepository.findById(userId)

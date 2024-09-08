@@ -1,6 +1,7 @@
 package com.goalglo.services;
 
 import com.goalglo.common.ResourceNotFoundException;
+import com.goalglo.config.SecretConfig;
 import com.goalglo.dto.PaymentDTO;
 import com.goalglo.entities.Payment;
 import com.goalglo.entities.ServiceEntity;
@@ -9,7 +10,6 @@ import com.goalglo.entities.User;
 import com.goalglo.hook.StripeWebhook;
 import com.goalglo.repositories.PaymentRepository;
 import com.goalglo.repositories.TransactionRepository;
-import com.goalglo.util.SecretConfig;
 import com.stripe.Stripe;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
@@ -39,7 +39,7 @@ public class PaymentService {
       this.serviceService = serviceService;
       this.transactionRepository = transactionRepository;
       this.secretConfig = secretConfig;
-      Stripe.apiKey = secretConfig.getStripeApiKey();
+      Stripe.apiKey = secretConfig.getStripe().getApiKey();
    }
 
    /**
@@ -107,7 +107,7 @@ public class PaymentService {
    public String handleStripeWebhook(String payload, String sigHeader) {
 
       try {
-         String stripeEndpointSecret = secretConfig.getStripeEndpointSecret();
+         String stripeEndpointSecret = secretConfig.getStripe().getEndpointSecret();
 
          Event event = stripeWebhook.captureStripeEvent(payload, sigHeader, stripeEndpointSecret);
 

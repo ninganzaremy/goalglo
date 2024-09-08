@@ -3,11 +3,11 @@ package com.goalglo.services;
 import com.goalglo.aws.AwsSesService;
 import com.goalglo.common.ResourceNotFoundException;
 import com.goalglo.common.TokenCommons;
+import com.goalglo.config.SecretConfig;
 import com.goalglo.entities.EmailVerificationToken;
 import com.goalglo.entities.User;
 import com.goalglo.repositories.EmailVerificationTokenRepository;
 import com.goalglo.repositories.UserRepository;
-import com.goalglo.util.SecretConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -61,7 +61,7 @@ public class PasswordResetService {
     * @param token The password reset token generated for the user.
     */
    private void sendPasswordResetEmail(User user, String token) {
-      String passwordResetEmailTemplate = secretConfig.getPasswordResetEmailTemplate();
+      String passwordResetEmailTemplate = secretConfig.getEmail().getTemplates().getPasswordReset();
       String domain = secretConfig.getActiveDomain();
 
       String subject = emailTemplateService.getSubjectByTemplateName(passwordResetEmailTemplate);

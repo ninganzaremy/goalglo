@@ -1,8 +1,8 @@
 package com.goalglo.security;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.goalglo.config.SecretConfig;
 import com.goalglo.repositories.UserRepository;
-import com.goalglo.util.SecretConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -61,11 +61,11 @@ public class SecurityConfig {
 
             // Secured role endpoints
             .requestMatchers(HttpMethod.DELETE, "/api/appointments/all", "/api/transactions/all", "/api/admin-actions/**")
-            .hasRole(secretConfig.getSecuredRole())
+            .hasRole(secretConfig.getRoles().getSecuredRole())
 
             // Mixed role endpoints
             .requestMatchers("/user/**", "/api/transactions/**")
-            .hasAnyRole(secretConfig.getPublicRole(), secretConfig.getSecuredRole())
+            .hasAnyRole(secretConfig.getRoles().getPublicRole(), secretConfig.getRoles().getSecuredRole())
 
             // Allow all other requests
             .anyRequest().permitAll())
