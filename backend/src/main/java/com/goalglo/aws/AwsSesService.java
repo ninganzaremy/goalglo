@@ -1,6 +1,6 @@
 package com.goalglo.aws;
 
-import com.goalglo.util.SecretConfig;
+import com.goalglo.config.SecretConfig;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -22,11 +22,11 @@ public class AwsSesService {
    public AwsSesService(SecretConfig secretConfig) {
       this.secretConfig = secretConfig;
 
-      AwsBasicCredentials awsCreds = AwsBasicCredentials.create(secretConfig.getAccessKeyId(), secretConfig.getSecretAccessKey());
+      AwsBasicCredentials awsCreds = AwsBasicCredentials.create(secretConfig.getAws().getAccessKeyId(), secretConfig.getAws().getSecretAccessKey());
 
       this.sesClient = SesClient.builder()
          .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
-         .region(Region.of(secretConfig.getAwsRegion()))
+         .region(Region.of(secretConfig.getAws().getRegion()))
          .build();
 
    }
@@ -45,7 +45,7 @@ public class AwsSesService {
             .subject(Content.builder().data(subject).build())
             .body(Body.builder().text(Content.builder().data(body).build()).build())
             .build())
-         .source(secretConfig.getAwsSesEmail())
+         .source(secretConfig.getAws().getSes().getSourceEmail())
          .build();
 
       sesClient.sendEmail(emailRequest);

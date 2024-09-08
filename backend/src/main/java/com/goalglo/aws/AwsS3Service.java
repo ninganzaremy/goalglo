@@ -1,6 +1,6 @@
 package com.goalglo.aws;
 
-import com.goalglo.util.SecretConfig;
+import com.goalglo.config.SecretConfig;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -25,9 +25,9 @@ public class AwsS3Service {
    public AwsS3Service(SecretConfig secretConfig) {
       this.secretConfig = secretConfig;
 
-      AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(secretConfig.getAccessKeyId(), secretConfig.getSecretAccessKey());
+      AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(secretConfig.getAws().getAccessKeyId(), secretConfig.getAws().getSecretAccessKey());
       this.s3Client = S3Client.builder()
-         .region(Region.of(secretConfig.getAwsRegion()))
+         .region(Region.of(secretConfig.getAws().getRegion()))
          .credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
          .build();
    }
@@ -73,7 +73,7 @@ public class AwsS3Service {
     * @return the public URL to access the object
     */
    public String generatePublicUrl(String key) {
-      return "https://" + secretConfig.getAwsBucketName() + ".s3." + secretConfig.getAwsRegion() + ".amazonaws.com/" + key;
+      return "https://" + secretConfig.getAwsBucketName() + ".s3." + secretConfig.getAws().getRegion() + ".amazonaws.com/" + key;
    }
 
    /**

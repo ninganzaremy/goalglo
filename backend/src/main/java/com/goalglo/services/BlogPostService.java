@@ -1,12 +1,12 @@
 package com.goalglo.services;
 
 import com.goalglo.aws.AwsS3Service;
+import com.goalglo.config.SecretConfig;
 import com.goalglo.dto.BlogPostDTO;
 import com.goalglo.entities.BlogPost;
 import com.goalglo.entities.User;
 import com.goalglo.repositories.BlogPostRepository;
 import com.goalglo.repositories.UserRepository;
-import com.goalglo.util.SecretConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -61,7 +61,7 @@ public class BlogPostService {
       BlogPost blogPost = new BlogPost(blogPostDTO);
       blogPost.setAuthor(currentUser);
       blogPost.setPublished(currentUser.getRoles().stream()
-         .anyMatch(role -> secretConfig.getSecuredRole().equals(role.getName())));
+         .anyMatch(role -> secretConfig.getRoles().getSecuredRole().equals(role.getName())));
 
       if (image != null && !image.isEmpty()) {
          blogPost.setImageUrl(awsS3Service.uploadFile(image));

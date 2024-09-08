@@ -1,7 +1,7 @@
 package com.goalglo.security;
 
 
-import com.goalglo.util.SecretConfig;
+import com.goalglo.config.SecretConfig;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -27,14 +27,14 @@ public class JwtConfig {
 
    @Bean
    public JwtEncoder jwtEncoder() {
-      SecretKey key = new SecretKeySpec(secretConfig.getJwtSecret().getBytes(), "HmacSHA512");
+      SecretKey key = new SecretKeySpec(secretConfig.getJwt().getSecret().getBytes(), "HmacSHA512");
       JWKSource<SecurityContext> immutableSecret = new ImmutableSecret<>(key);
       return new NimbusJwtEncoder(immutableSecret);
    }
 
    @Bean
    public JwtDecoder jwtDecoder() {
-      return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secretConfig.getJwtSecret().getBytes(), "HmacSHA512"))
+      return NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secretConfig.getJwt().getSecret().getBytes(), "HmacSHA512"))
          .macAlgorithm(MacAlgorithm.HS512)
          .build();
    }

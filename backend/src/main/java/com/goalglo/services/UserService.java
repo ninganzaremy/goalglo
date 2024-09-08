@@ -3,6 +3,7 @@ package com.goalglo.services;
 import com.goalglo.aws.AwsSesService;
 import com.goalglo.common.ResourceNotFoundException;
 import com.goalglo.common.TokenCommons;
+import com.goalglo.config.SecretConfig;
 import com.goalglo.dto.AppointmentDTO;
 import com.goalglo.dto.UserDTO;
 import com.goalglo.entities.EmailVerificationToken;
@@ -12,7 +13,6 @@ import com.goalglo.repositories.EmailVerificationTokenRepository;
 import com.goalglo.repositories.RoleRepository;
 import com.goalglo.repositories.UserRepository;
 import com.goalglo.tokens.JwtTokenUtil;
-import com.goalglo.util.SecretConfig;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -69,13 +69,13 @@ public class UserService {
     */
    public UserDTO registerUser(User user) {
 
-      Role publicRole = roleRepository.findByName(secretConfig.getPublicRole())
+      Role publicRole = roleRepository.findByName(secretConfig.getRoles().getPublicRole())
          .orElseThrow(() -> new RuntimeException("Public role not found"));
 
       Optional<User> existingUserOpt = userRepository.findByEmailOrUsername(user.getEmail(), user.getUsername());
 
       return existingUserOpt.map(existingUser -> {
-         if (existingUser.getRoles().stream().anyMatch(role -> secretConfig.getProspectRole().equals(role.getName()))) {
+         if (existingUser.getRoles().stream().anyMatch(role -> secretConfig.getRoles().getProspectRole().equals(role.getName()))) {
             // Upgrade the existing "PROSPECT" to a registered user
             return processUserUpdate(existingUser, user, publicRole);
          } else {
@@ -119,7 +119,7 @@ public class UserService {
     * @param token The verification token generated for the user.
     */
    private void sendVerificationEmail(User user, String token) {
-      String emailVerificationTemplate = secretConfig.getEmailVerificationTemplate();
+      String emailVerificationTemplate = secretConfig.getEmail().getTemplates().getEmailVerification();
       String domain = secretConfig.getActiveDomain();
 
       String subject = emailTemplateService.getSubjectByTemplateName(emailVerificationTemplate);
@@ -277,12 +277,12 @@ public class UserService {
     * @return The existing or newly created user.
     */
    public User findOrCreateUserByEmail(String email, AppointmentDTO appointmentDTO) {
-      Role prospectRole = roleRepository.findByName(secretConfig.getProspectRole())
+      Role prospectRole = roleRepository.findByName(secretConfig.getRoles().getProspectRole())
          .orElseThrow(() -> new RuntimeException("PROSPECT role not found"));
 
       return userRepository.findByEmail(email)
          .map(existingUser -> {
-            if (existingUser.getRoles().stream().anyMatch(role -> secretConfig.getProspectRole().equals(role.getName()))) {
+            if (existingUser.getRoles().stream().anyMatch(role -> secretConfig.getRoles().getProspectRole().equals(role.getName()))) {
                // Update the existing PROSPECT user
                updateUserFromAppointmentDTO(existingUser, appointmentDTO);
                return userRepository.save(existingUser);
