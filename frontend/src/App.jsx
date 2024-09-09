@@ -1,33 +1,39 @@
+import {useEffect} from "react";
 import {Route, Routes} from "react-router-dom";
+import {useDispatch} from "react-redux";
+
 import FinancialGoalTracker from "./components/goals/FinancialGoalTracker";
 import ServiceBooking from "./components/services/ServiceBooking";
 import AppointmentList from "./components/appointments/AppointmentList";
-import HomePage from "./pages/HomePage.jsx";
-import LoginPage from "./pages/LoginPage.jsx";
-import RegisterPage from "./pages/RegisterPage.jsx";
-import UserDashboardPage from "./pages/UserDashboardPage.jsx";
-import ServicesPage from "./pages/ServicesPage.jsx";
-import CreateServicePage from "./pages/CreateServicePage.jsx";
-import BlogPage from "./pages/BlogPage.jsx";
-import ContactPage from "./pages/ContactPage.jsx";
-import AboutUs from "./components/home/AboutUs.jsx";
-import CreateBlogPostPage from "./pages/CreateBlogPostPage.jsx";
-import Header from "./components/layout/Header.jsx";
-import Footer from "./components/layout/Footer.jsx";
-import {useEffect} from "react";
-import {logoutUser} from "./redux/actions/loginAction.js";
-import {useDispatch} from "react-redux";
-import EmailVerificationPage from "./pages/EmailVerificationPage.jsx";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import UserDashboardPage from "./pages/UserDashboardPage";
+import ServicesPage from "./pages/ServicesPage";
+import CreateServicePage from "./pages/CreateServicePage";
+import BlogPage from "./pages/BlogPage";
+import ContactPage from "./pages/ContactPage";
+import AboutUs from "./components/home/AboutUs";
+import CreateBlogPostPage from "./pages/CreateBlogPostPage";
+import Header from "./components/layout/Header";
+import Footer from "./components/layout/Footer";
+import {logoutUser} from "./redux/actions/loginAction";
+import EmailVerificationPage from "./pages/EmailVerificationPage";
+import {manageStorageEventListener} from "./security/securityConfig";
+import BlogPostList from "./components/blog/BlogPostList";
+import SingleBlogPostPage from "./components/blog/SingleBlogPostPage";
+import SingleServicePage from "./components/services/SingleServicePage";
+import PasswordResetConfirmationPage from "./pages/PasswordResetConfirmationPage";
+import PasswordResetRequestPage from "./pages/PasswordResetRequestPage";
+import BookingConfirmationPage from "./pages/BookingConfirmationPage";
 
 import './styles/main.scss';
-import {manageStorageEventListener} from "./security/securityConfig";
 
 /**
- * The main App component.
- *
- * @returns {JSX.Element}
+ * The main App component that renders the application routes and components.
+ * @returns {JSX.Element} The rendered App component.
  */
-function App() {
+const App = () => {
    const dispatch = useDispatch();
 
    useEffect(() => {
@@ -52,20 +58,23 @@ function App() {
             <Route path="/register" element={<RegisterPage/>}/>
             <Route path="/about" element={<AboutUs/>}/>
             <Route path="/dashboard" element={<UserDashboardPage/>}/>
-            <Route
-               path="/admin/create-service"
-               element={<CreateServicePage/>}
-            />
+            <Route path="/admin/create-service" element={<CreateServicePage/>}/>
             <Route path="/services" element={<ServicesPage/>}/>
             <Route path="/blog" element={<BlogPage/>}/>
+            <Route path="/blog/:id" element={<SingleBlogPostPage/>}/>
             <Route path="/contact" element={<ContactPage/>}/>
             <Route path="/create-blog" element={<CreateBlogPostPage/>}/>
             <Route path="/goals" element={<FinancialGoalTracker/>}/>
-            <Route path="/services" element={<ServiceBooking/>}/>
+            <Route path="/book-service" element={<ServiceBooking/>}/>
+            <Route path="/book-service/:id" element={<ServiceBooking/>}/>
+            <Route path="/services/:id" element={<SingleServicePage/>}/>
             <Route path="/appointments" element={<AppointmentList/>}/>
             <Route path="/book" element={<ServiceBooking/>}/>
             <Route path="/verify-email" element={<EmailVerificationPage/>}/>
-
+            <Route path="/blog" component={BlogPostList}/>
+            <Route path="/password-reset-request" element={<PasswordResetRequestPage/>}/>
+            <Route path="/password-reset-confirm" element={<PasswordResetConfirmationPage/>}/>
+            <Route path="/booking-confirmation" element={<BookingConfirmationPage/>}/>
          </Routes>
          <Footer/>
       </div>
