@@ -27,10 +27,15 @@ app:
       thanks: ${THANKS_EMAIL_TEMPLATE}
       contact-response: ${CONTACT_RESPONSE_EMAIL_TEMPLATE}
       email-verification: ${EMAIL_VERIFICATION_TEMPLATE}
+      booking-confirmation-email: ${BOOKING_CONFIRMATION_EMAIL_TEMPLATE}
   
   stripe:
     api-key: ${STRIPE_API_KEY}
     endpoint-secret: ${STRIPE_ENDPOINT_SECRET}
+
+  contact:
+    company-email: ${GOALGLO_EMAIL}
+    company-phone-number: ${GOALGLO_PHONE_NUMBER}
 
   spring:
     profiles:

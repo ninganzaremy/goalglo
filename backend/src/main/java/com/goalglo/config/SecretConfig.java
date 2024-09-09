@@ -21,6 +21,7 @@ public class SecretConfig {
    private Aws aws;
    private Email email;
    private Stripe stripe;
+   private Contact contact;
 
    public List<String> getAllowedDomains() {
       return Arrays.asList(domain.getDev(), domain.getProd());
@@ -94,6 +95,8 @@ public class SecretConfig {
          private String thanks;
          private String contactResponse;
          private String emailVerification;
+         private String bookingConfirmationEmail;
+
       }
    }
 
@@ -104,6 +107,12 @@ public class SecretConfig {
       private String endpointSecret;
    }
 
+   @Getter
+   @Setter
+   public static class Contact {
+      private String companyEmail;
+      private String companyPhoneNumber;
+   }
 
    @Getter
    @Setter
@@ -116,4 +125,5 @@ public class SecretConfig {
          private String active;
       }
    }
+
 }
