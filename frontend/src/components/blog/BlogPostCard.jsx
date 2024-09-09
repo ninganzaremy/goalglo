@@ -1,4 +1,4 @@
-import {Link} from 'react-router-dom';
+import {Link} from "react-router-dom";
 
 /*
 BlogPostCard component
@@ -15,20 +15,38 @@ post: An object containing the post data, including:
   imageUrl: The URL of the image associated with the post
 
   */
-
-const BlogPostCard = ({ post }) => {
+const formatDate = (dateString) => {
+   const date = new Date(dateString);
+   return date instanceof Date && !isNaN(date)
+      ? date.toLocaleDateString("en-US", {
+         year: "numeric",
+         month: "long",
+         day: "numeric",
+      })
+      : "Date not available";
+};
+const BlogPostCard = ({post, isAdmin, onEditClick}) => {
    return (
       <div className="blog-post-card">
-         <img src={post.imageUrl} alt={post.title} className="post-image" />
-         <div className="post-content">
-            <h2>{post.title}</h2>
-            <p className="post-excerpt">{post.excerpt}</p>
-            <div className="post-meta">
-               <span className="post-date">{new Date(post.date).toLocaleDateString()}</span>
-               <span className="post-author">By {post.author}</span>
-            </div>
-            <Link to={`/blog/${post.id}`} className="read-more">Read More</Link>
-         </div>
+         {post.imageUrl && (
+            <img
+               src={post.imageUrl}
+               alt={post.title}
+               className="blog-post-image"
+            />
+         )}
+         <h2>{post.title}</h2>
+         <p>{post.content.substring(0, 150)}...</p>
+         <p>Published on: {formatDate(post.publishedAt)}</p>
+         <p>Author: {post.author ? post.author : "Unknown"}</p>
+         {isAdmin && (
+            <button onClick={onEditClick} className="edit-button">
+               Edit
+            </button>
+         )}
+         <Link to={`/blog/${post.id}`} className="read-more">
+            Read More
+         </Link>
       </div>
    );
 };
