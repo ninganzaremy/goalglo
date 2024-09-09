@@ -1,6 +1,7 @@
 package com.goalglo.controllers;
 
 import com.goalglo.dto.UserDTO;
+import com.goalglo.dto.VerifyEmailDTO;
 import com.goalglo.entities.User;
 import com.goalglo.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,14 +45,14 @@ public class UserController {
    }
 
    /**
-    * Verifies the user's email using the provided token.
+    * Verifies an email token for a user.
     *
-    * @param token The email verification token.
-    * @return ResponseEntity indicating success or failure of verification.
+    * @param verifyEmailDTO the DTO containing the email and token
+    * @return a ResponseEntity with a success or error message and HTTP status
     */
-   @GetMapping("/verify-email")
-   public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
-      boolean isVerified = userService.verifyEmailToken(token);
+   @PostMapping("/verify-email")
+   public ResponseEntity<String> verifyEmail(@RequestBody VerifyEmailDTO verifyEmailDTO) {
+      boolean isVerified = userService.verifyEmailToken(verifyEmailDTO);
       if (isVerified) {
          return ResponseEntity.ok("Email verified successfully.");
       } else {
