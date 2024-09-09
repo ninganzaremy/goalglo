@@ -4,12 +4,13 @@ import com.goalglo.dto.TransactionDTO;
 import com.goalglo.entities.Transaction;
 import com.goalglo.entities.User;
 import com.goalglo.repositories.TransactionRepository;
-import com.goalglo.repositories.UserRepository;
+import com.goalglo.tokens.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,21 +20,21 @@ import java.util.stream.Collectors;
 public class TransactionService {
 
   private final TransactionRepository transactionRepository;
-  private final UserRepository userRepository;
+  private final JwtUtils jwtUtils;
 
   @Autowired
-  public TransactionService(TransactionRepository transactionRepository, UserRepository userRepository) {
+  public TransactionService(TransactionRepository transactionRepository, JwtUtils jwtUtils) {
     this.transactionRepository = transactionRepository;
-    this.userRepository = userRepository;
+    this.jwtUtils = jwtUtils;
   }
 
   /**
    * Get transactions for a specific user
    */
-  public Page<TransactionDTO> getUserTransactions(String username, Pageable pageable) {
-    User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new RuntimeException("User not found"));
-    return transactionRepository.findByUserId(user.getId(), pageable)
+  public Page<TransactionDTO> getUserTransactions(Authentication authentication, Pageable pageable) {
+    User currentUser = jwtUtils.getCurrentUser(authentication).orElseThrow(() -> new RuntimeException("User not found"));
+
+    return transactionRepository.findByUserId(currentUser.getId(), pageable)
         .map(this::convertToDTO);
   }
 
@@ -48,11 +49,10 @@ public class TransactionService {
   /**
    * Get recent transactions for a specific user
    */
-  public List<TransactionDTO> getRecentTransactions(String username, int limit) {
-    User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new RuntimeException("User not found"));
+  public List<TransactionDTO> getRecentTransactions(Authentication authentication, int limit) {
+    User currentUser = jwtUtils.getCurrentUser(authentication).orElseThrow(() -> new RuntimeException("User not found"));
     Pageable pageable = PageRequest.of(0, limit, Sort.by("transactionDate").descending());
-    return transactionRepository.findByUserId(user.getId(), pageable)
+    return transactionRepository.findByUserId(currentUser.getId(), pageable)
         .getContent()
         .stream()
         .map(this::convertToDTO)

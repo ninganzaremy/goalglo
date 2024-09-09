@@ -34,8 +34,8 @@ public class TransactionController {
    */
   @GetMapping("/user")
   public ResponseEntity<Page<TransactionDTO>> getUserTransactions(Authentication authentication, Pageable pageable) {
-    String username = authentication.getName();
-    Page<TransactionDTO> transactions = transactionService.getUserTransactions(username, pageable);
+
+    Page<TransactionDTO> transactions = transactionService.getUserTransactions(authentication, pageable);
     return ResponseEntity.ok(transactions);
   }
 
@@ -62,8 +62,8 @@ public class TransactionController {
   public ResponseEntity<List<TransactionDTO>> getRecentTransactions(
       Authentication authentication,
       @RequestParam(defaultValue = "10") int limit) {
-    String username = authentication.getName();
-    List<TransactionDTO> recentTransactions = transactionService.getRecentTransactions(username, limit);
+
+    List<TransactionDTO> recentTransactions = transactionService.getRecentTransactions(authentication, limit);
     return ResponseEntity.ok(recentTransactions);
   }
 }
