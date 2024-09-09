@@ -21,10 +21,10 @@ It also includes a submit button that triggers the handleSubmit function.
  */
 const GoalForm = ({ onSubmit, initialGoal }) => {
    const [goal, setGoal] = useState({
-      name: '',
-      targetAmount: '',
-      currentAmount: '',
-      targetDate: ''
+      name: "",
+      targetAmount: "",
+      currentAmount: "",
+      deadline: "",
    });
 
    useEffect(() => {
@@ -35,20 +35,24 @@ const GoalForm = ({ onSubmit, initialGoal }) => {
 
    const handleChange = (e) => {
       const { name, value } = e.target;
-      setGoal(prevGoal => ({ ...prevGoal, [name]: value }));
+      setGoal((prevGoal) => ({...prevGoal, [name]: value}));
    };
 
    const handleSubmit = (e) => {
       e.preventDefault();
       onSubmit(goal);
       if (!initialGoal) {
-         setGoal({ name: '', targetAmount: '', currentAmount: '', targetDate: '' });
+         setGoal({
+            name: "",
+            targetAmount: "",
+            currentAmount: "",
+            deadline: "",
+         });
       }
    };
 
    return (
-      <form className="goal-form" onSubmit={handleSubmit}>
-         <h3>{initialGoal ? 'Edit Goal' : 'Add New Goal'}</h3>
+      <form onSubmit={handleSubmit}>
          <div className="form-group">
             <label htmlFor="name">Goal Name</label>
             <input
@@ -83,18 +87,18 @@ const GoalForm = ({ onSubmit, initialGoal }) => {
             />
          </div>
          <div className="form-group">
-            <label htmlFor="targetDate">Target Date</label>
+            <label htmlFor="deadline">Target Date</label>
             <input
                type="date"
-               id="targetDate"
-               name="targetDate"
-               value={goal.targetDate}
+               id="deadline"
+               name="deadline"
+               value={goal.deadline}
                onChange={handleChange}
                required
             />
          </div>
          <button type="submit" className="btn-primary">
-            {initialGoal ? 'Update Goal' : 'Add Goal'}
+            {initialGoal ? "Update Goal" : "Add Goal"}
          </button>
       </form>
    );

@@ -1,5 +1,6 @@
 package com.goalglo.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,5 +16,6 @@ public class GoalDTO {
   private String name;
   private BigDecimal targetAmount;
   private BigDecimal currentAmount;
+  @JsonFormat(pattern = "yyyy-MM-dd")
   private LocalDate deadline;
 }
