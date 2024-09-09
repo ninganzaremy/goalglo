@@ -1,6 +1,7 @@
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {cancelAppointment, fetchAppointments,} from "../../redux/actions/appointmentActions";
+import EditAppointment from "./EditAppointment.jsx";
 
 /**
  * AppointmentList component
@@ -12,6 +13,7 @@ const AppointmentList = () => {
    const { appointments, loading, error } = useSelector(
       (state) => state.appointments
    );
+   const [editingAppointment, setEditingAppointment] = useState(null);
 
    useEffect(() => {
       dispatch(fetchAppointments());
@@ -34,14 +36,20 @@ const AppointmentList = () => {
 
    const renderAppointment = (appointment) => (
       <li key={appointment.id} className="appointment-item">
-         <span>
-            {appointment.serviceName} on{" "}
-            {new Date(appointment.startTime).toLocaleString()}
-         </span>
-         {new Date(appointment.startTime) > now && (
-            <button onClick={() => handleCancelAppointment(appointment.id)}>
-               Cancel
-            </button>
+      <span>
+         {appointment.serviceName} on{" "}
+         {new Date(appointment.startTime).toLocaleString()}
+      </span>
+         <span>Status: {appointment.status}</span>
+         {appointment.status !== "Canceled" && new Date(appointment.startTime) > now && (
+            <>
+               <button onClick={() => setEditingAppointment(appointment)}>
+                  Edit
+               </button>
+               <button onClick={() => handleCancelAppointment(appointment.id)}>
+                  Cancel
+               </button>
+            </>
          )}
       </li>
    );
@@ -67,6 +75,12 @@ const AppointmentList = () => {
                   <ul>{pastAppointments.map(renderAppointment)}</ul>
                )}
             </>
+         )}
+         {editingAppointment && (
+            <EditAppointment
+               appointment={editingAppointment}
+               onClose={() => setEditingAppointment(null)}
+            />
          )}
       </div>
    );

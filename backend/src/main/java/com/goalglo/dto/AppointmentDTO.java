@@ -28,6 +28,9 @@ public class AppointmentDTO {
    private String email;
    private String phoneNumber;
    private String address;
+   private String serviceName;
+   private String userName;
+
 
    public AppointmentDTO(Appointment appointment) {
       this.id = appointment.getId();
@@ -38,6 +41,8 @@ public class AppointmentDTO {
       this.endTime = appointment.getTimeSlot().getEndTime();
       this.status = appointment.getStatus();
       this.notes = appointment.getNotes();
+      this.serviceName = appointment.getService().getName();
+      this.userName = appointment.getUser().getFirstName();
 
       this.firstName = appointment.getUser().getFirstName();
       this.lastName = appointment.getUser().getLastName();

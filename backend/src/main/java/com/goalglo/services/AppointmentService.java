@@ -1,6 +1,8 @@
 package com.goalglo.services;
 
+import com.goalglo.aws.AwsSesService;
 import com.goalglo.common.ResourceNotFoundException;
+import com.goalglo.config.SecretConfig;
 import com.goalglo.dto.AppointmentDTO;
 import com.goalglo.entities.Appointment;
 import com.goalglo.entities.ServiceEntity;
@@ -8,9 +10,11 @@ import com.goalglo.entities.TimeSlot;
 import com.goalglo.entities.User;
 import com.goalglo.repositories.AppointmentRepository;
 import com.goalglo.repositories.ServiceRepository;
-import com.goalglo.repositories.UserRepository;
+import com.goalglo.tokens.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,28 +28,38 @@ public class AppointmentService {
    private final TimeSlotService timeSlotService;
    private final UserService userService;
    private final ServiceRepository serviceRepository;
-   private final UserRepository userRepository;
+   private final JwtUtils jwtUtils;
+   private final AwsSesService awsSesService;
+   private final EmailTemplateService emailTemplateService;
+   private final SecretConfig secretConfig;
+
 
    @Autowired
    public AppointmentService(AppointmentRepository appointmentRepository, TimeSlotService timeSlotService,
-                             UserService userService, ServiceRepository serviceRepository, UserRepository userRepository) {
+                             UserService userService, ServiceRepository serviceRepository, JwtUtils jwtUtils, AwsSesService awsSesService, SecretConfig secretConfig, EmailTemplateService emailTemplateService) {
       this.appointmentRepository = appointmentRepository;
       this.timeSlotService = timeSlotService;
       this.userService = userService;
       this.serviceRepository = serviceRepository;
-      this.userRepository = userRepository;
+      this.jwtUtils = jwtUtils;
+      this.awsSesService = awsSesService;
+      this.secretConfig = secretConfig;
+      this.emailTemplateService = emailTemplateService;
+
 
    }
 
    /**
-    * Creates a new appointment and books a time slot.
+    * Books an appointment for a logged-in user.
     *
-    * @param appointmentDTO The DTO object containing the appointment details.
-    * @param timeSlotId     The UUID of the time slot to be booked.
-    * @param username       The username of the user.
-    * @return The created AppointmentDTO.
+    * @param appointmentDTO The appointment details.
+    * @param timeSlotId     The ID of the time slot to book.
+    * @param authentication The authentication object containing the logged-in user's details.
+    * @return The booked appointment details.
+    * @throws IllegalStateException If the time slot is already booked.
     */
-   public AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO, UUID timeSlotId, String username) {
+   public AppointmentDTO bookAppointment(AppointmentDTO appointmentDTO, UUID timeSlotId,
+                                         Authentication authentication) {
       // Check if the time slot is available
       TimeSlot timeSlot = timeSlotService.findTimeSlotById(timeSlotId)
          .orElseThrow(() -> new ResourceNotFoundException("TimeSlot not found"));
@@ -53,8 +67,10 @@ public class AppointmentService {
       if (timeSlot.isBooked()) {
          throw new IllegalStateException("Time slot is already booked");
       }
+      String username = (authentication != null) ? authentication.getName() : null;
 
       User user;
+
       if (username != null) {
          // Find the logged-in user
          user = userService.findByUsernameOrEmail(username);
@@ -76,10 +92,36 @@ public class AppointmentService {
       }
       // Save the appointment
       appointment = appointmentRepository.save(appointment);
-      // Mark the time slot as booked
+
+      sendBookingConfirmationEmail(user, appointment);
+
       timeSlotService.bookSlot(timeSlotId, appointment);
 
       return new AppointmentDTO(appointment);
+   }
+
+   /**
+    * Sends a booking confirmation email to the user.
+    *
+    * @param user        The user to send the email to.
+    * @param appointment The appointment details.
+    */
+   private void sendBookingConfirmationEmail(User user, Appointment appointment) {
+      String bookingConfirmationEmailTemplate = secretConfig.getEmail().getTemplates().getBookingConfirmationEmail();
+      String domain = secretConfig.getActiveDomain();
+      String companyEmail = secretConfig.getContact().getCompanyEmail();
+      String companyPhoneNumber = secretConfig.getContact().getCompanyPhoneNumber();
+
+      String subject = emailTemplateService.getSubjectByTemplateName(bookingConfirmationEmailTemplate);
+      String body = emailTemplateService.getBodyByTemplateName(bookingConfirmationEmailTemplate)
+         .replace("{service_name}", appointment.getService().getName())
+         .replace("{booking_date}", appointment.getStartTime().toLocalDate().toString())
+         .replace("{booking_time}", appointment.getStartTime().toLocalTime().toString())
+         .replace("{link_to_registration}", domain + "/register")
+         .replace("{company_email}", companyEmail)
+         .replace("{company_phone_number}", companyPhoneNumber);
+
+      awsSesService.sendEmail(user.getEmail(), subject, body);
    }
 
    /**
@@ -99,12 +141,10 @@ public class AppointmentService {
     * @param username The UUID of the user.
     * @return A list of appointments associated with the user.
     */
-   public List<AppointmentDTO> findAppointmentsByAuthenticatedUser(String username) {
-      User user = userRepository.findByUsername(username)
-         .orElseThrow(() -> new RuntimeException("User not found"));
-      List<Appointment> appointments = appointmentRepository.findByUserId(user.getId());
-      return appointments.stream()
-         .map(AppointmentDTO::new)
+   public List<AppointmentDTO> findUserAppointments(Authentication authentication) {
+
+      return appointmentRepository.findByUserId(getCurrentUser(authentication).getId()).stream()
+         .map(this::convertToDTO)
          .collect(Collectors.toList());
    }
 
@@ -115,49 +155,33 @@ public class AppointmentService {
     * @return An Optional containing the updated appointment if found and updated,
     *         or an empty Optional if not.
     */
-   public Optional<AppointmentDTO> updateAppointment(UUID id, AppointmentDTO appointmentDTO) {
-      return appointmentRepository.findById(id).map(existingAppointment -> {
-         // Update the service if it's provided
-         if (appointmentDTO.getServiceId() != null) {
-            ServiceEntity service = serviceRepository.findById(appointmentDTO.getServiceId())
-               .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
-            existingAppointment.setService(service);
-         }
-
-         // Sync start and end times with the provided time slot, if available
-         if (appointmentDTO.getTimeSlotId() != null) {
-            TimeSlot timeSlot = timeSlotService.findTimeSlotById(appointmentDTO.getTimeSlotId())
-               .orElseThrow(() -> new ResourceNotFoundException("TimeSlot not found"));
-            existingAppointment.setTimeSlot(timeSlot);
-         }
-
-         // Update status, notes, etc., if provided
-         if (appointmentDTO.getStatus() != null) {
-            existingAppointment.setStatus(appointmentDTO.getStatus());
-         }
-         if (appointmentDTO.getNotes() != null) {
-            existingAppointment.setNotes(appointmentDTO.getNotes());
-         }
-
-         // Save and return the updated appointment
-         Appointment updatedAppointment = appointmentRepository.save(existingAppointment);
-         return new AppointmentDTO(updatedAppointment);
-      });
+   public Optional<AppointmentDTO> updateAppointment(UUID id, AppointmentDTO appointmentDTO,
+                                                     Authentication authentication) {
+      return appointmentRepository.findById(id)
+         .filter(appointment -> appointment.getUser().getId().equals(getCurrentUser(authentication).getId()))
+         .map(appointment -> {
+            updateAppointmentFields(appointment, appointmentDTO);
+            return convertToDTO(appointmentRepository.save(appointment));
+         });
    }
 
    /**
-    * Deletes an appointment by its UUID.
+    * Cancels an existing appointment.
     *
-    * @param id The UUID of the appointment to delete.
-    * @return true if the appointment was deleted, false if the appointment was not
-    *         found.
+    * @param id The UUID of the appointment to cancel.
+    * @return true if the appointment was found and canceled, false otherwise.
     */
-   public boolean deleteAppointment(UUID id) {
-      if (appointmentRepository.existsById(id)) {
-         appointmentRepository.deleteById(id);
-         return true;
-      }
-      return false;
+   public boolean cancelAppointment(UUID id, Authentication authentication) {
+
+      return appointmentRepository.findById(id)
+         .filter(appointment -> appointment.getUser().getId().equals(getCurrentUser(authentication).getId()))
+         .map(appointment -> {
+            appointment.setStatus("Canceled");
+            appointmentRepository.save(appointment);
+            timeSlotService.cancelBooking(appointment.getTimeSlot().getId());
+            return true;
+         })
+         .orElse(false);
    }
 
    /**
@@ -166,8 +190,90 @@ public class AppointmentService {
     * @return A list of all appointments.
     */
    public List<AppointmentDTO> findAllAppointments() {
-      return appointmentRepository.findAll().stream()
-         .map(AppointmentDTO::new)
+      return appointmentRepository.findAllWithDetails().stream()
+         .map(this::convertToDTO)
          .collect(Collectors.toList());
+   }
+
+   /**
+    * Converts an appointment entity to an appointment DTO.
+    *
+    * @param appointment The appointment entity to convert.
+    * @return The corresponding appointment DTO.
+    */
+   private AppointmentDTO convertToDTO(Appointment appointment) {
+      AppointmentDTO dto = new AppointmentDTO();
+      dto.setId(appointment.getId());
+      dto.setUserId(appointment.getUser().getId());
+      dto.setTimeSlotId(appointment.getTimeSlot().getId());
+      dto.setServiceId(appointment.getService() != null ? appointment.getService().getId() : null);
+      dto.setUserName(appointment.getUser().getFirstName() + " " + appointment.getUser().getLastName());
+
+      dto.setStatus(appointment.getStatus());
+      dto.setNotes(appointment.getNotes());
+      dto.setServiceName(appointment.getService().getName());
+      dto.setStartTime(appointment.getStartTime());
+      dto.setEndTime(appointment.getEndTime());
+      return dto;
+   }
+
+   /**
+    * Updates the fields of an appointment entity based on the provided DTO.
+    *
+    * @param appointment The appointment entity to update.
+    * @param dto         The DTO containing the new values.
+    */
+   private void updateAppointmentFields(Appointment appointment, AppointmentDTO dto) {
+      appointment.setStatus(dto.getStatus());
+      appointment.setNotes(dto.getNotes());
+      appointment.setStartTime(dto.getStartTime());
+      appointment.setEndTime(dto.getEndTime());
+   }
+
+
+   /**
+    * Updates the status of an existing appointment.
+    *
+    * @param id The UUID of the appointment to update.
+    * @return An Optional containing the updated appointment if found and updated,
+    * or an empty Optional if not.
+    */
+   @Transactional
+   public AppointmentDTO updateAppointmentStatus(UUID id, String newStatus) {
+      Appointment appointment = appointmentRepository.findById(id)
+         .orElseThrow(() -> new ResourceNotFoundException("Appointment not found"));
+
+      // Check if the status is actually changing
+      if (!appointment.getStatus().equalsIgnoreCase(newStatus)) {
+         String oldStatus = appointment.getStatus();
+         appointment.setStatus(newStatus);
+
+         boolean isNewlyRejected = (newStatus.equalsIgnoreCase("Denied") || newStatus.equalsIgnoreCase("Canceled"))
+            && !oldStatus.equalsIgnoreCase("Denied") && !oldStatus.equalsIgnoreCase("Canceled");
+
+         if (isNewlyRejected) {
+            timeSlotService.cancelBooking(appointment.getTimeSlot().getId());
+         } else if (newStatus.equalsIgnoreCase("Accepted")
+            && (oldStatus.equalsIgnoreCase("Denied") || oldStatus.equalsIgnoreCase("Canceled"))) {
+            timeSlotService.bookSlot(appointment.getTimeSlot().getId(), appointment);
+         }
+
+         // Save the updated appointment
+         appointment = appointmentRepository.save(appointment);
+      }
+
+      return convertToDTO(appointment);
+   }
+
+   /**
+    * Retrieves the current user based on the authentication object.
+    *
+    * @param authentication The authentication object containing the current user's information.
+    * @return The User object representing the current user.
+    * @throws RuntimeException If the user is not found.
+    */
+   private User getCurrentUser(Authentication authentication) {
+      return jwtUtils.getCurrentUser(authentication)
+         .orElseThrow(() -> new RuntimeException("User not found"));
    }
 }
