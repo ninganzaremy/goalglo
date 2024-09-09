@@ -113,3 +113,26 @@
     }
   }
 }
+
+.read-more, .learn-more, .book-now {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  margin-right: 0.5rem;
+  background-color: $secondary-color;
+  color: $white;
+  text-decoration: none;
+  border-radius: $border-radius;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: darken($secondary-color, 10%);
+  }
+}
+
+.book-now {
+  background-color: $primary-color;
+
+  &:hover {
+    background-color: darken($primary-color, 10%);
+  }
+}

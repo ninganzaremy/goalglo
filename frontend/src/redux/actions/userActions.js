@@ -18,7 +18,7 @@ export const VERIFY_EMAIL_FAILURE = 'VERIFY_EMAIL_FAILURE';
 export const verifyEmail = (token) => async (dispatch) => {
    dispatch({type: VERIFY_EMAIL_REQUEST});
    try {
-      const response = await apiService.get(`/users/verify-email?token=${token}`);
+      const response = await apiService.post('/users/verify-email', {token});
       dispatch({
          type: VERIFY_EMAIL_SUCCESS,
          payload: response.data

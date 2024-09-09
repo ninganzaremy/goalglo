@@ -1,7 +1,6 @@
 package com.goalglo.controllers;
 
 import com.goalglo.dto.BlogPostDTO;
-import com.goalglo.entities.BlogPost;
 import com.goalglo.services.BlogPostService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,29 @@ public class BlogPostController {
       return new ResponseEntity<>(createdBlogPostDTO, HttpStatus.CREATED);
    }
 
+   /**
+    * Retrieves all published blog posts.
+    *
+    * @return a ResponseEntity containing a list of all published blog post DTOs
+    * and HTTP status OK
+    */
+   @GetMapping("/published")
+   public ResponseEntity<List<BlogPostDTO>> getAllPublishedBlogPosts() {
+      List<BlogPostDTO> blogPosts = blogPostService.findAllPublishedBlogPosts();
+      return ResponseEntity.ok(blogPosts);
+   }
 
+   /**
+    * Retrieves the latest blog posts.
+    *
+    * @return a ResponseEntity containing a list of the latest blog post DTOs
+    * and HTTP status OK
+    */
+   @GetMapping("/latest")
+   public ResponseEntity<List<BlogPostDTO>> getLatestBlogPosts() {
+      List<BlogPostDTO> latestPosts = blogPostService.findLatestBlogPosts();
+      return ResponseEntity.ok(latestPosts);
+   }
    /**
     * Retrieves a blog post by its ID.
     *
@@ -80,23 +101,28 @@ public class BlogPostController {
       return new ResponseEntity<>(blogPosts, HttpStatus.OK);
    }
 
+
    /**
-    * Updates an existing blog post.
+    * Updates a blog post.
     *
-    * @param id          the UUID of the blog post to update
-    * @param blogPostDTO the updated blog post data transfer object
+    * @param id the UUID of the blog post to update
+    * @param title the new title of the blog post
+    * @param content the new content of the blog post
+    * @param published the new published status of the blog post
+    * @param image the new image of the blog post
     * @return a ResponseEntity containing the updated blog post DTO and HTTP status
-    *         OK,
-    *         or HTTP status NOT FOUND if the blog post does not exist
+    *         OK
     */
    @PutMapping("/{id}")
-   public ResponseEntity<BlogPostDTO> updateBlogPost(@PathVariable UUID id, @RequestBody BlogPostDTO blogPostDTO) {
-      BlogPost blogPost = new BlogPost(blogPostDTO);
-      return blogPostService.updateBlogPost(id, blogPost)
-         .map(updatedBlogPostDTO -> new ResponseEntity<>(updatedBlogPostDTO, HttpStatus.OK))
-         .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-   }
+   public ResponseEntity<BlogPostDTO> updateBlogPost(
+      @PathVariable UUID id,
+      @ModelAttribute BlogPostDTO blogPostDTO,
+      @RequestPart(value = "image", required = false) MultipartFile image,
+      Authentication authentication) throws IOException {
 
+      BlogPostDTO updatedBlogPost = blogPostService.updateBlogPost(id, blogPostDTO, image, authentication);
+      return ResponseEntity.ok(updatedBlogPost);
+   }
    /**
     * Deletes a blog post by its ID.
     *

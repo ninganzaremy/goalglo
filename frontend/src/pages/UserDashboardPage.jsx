@@ -8,6 +8,8 @@ import ServiceBooking from "../components/services/ServiceBooking";
 import AppointmentList from "../components/appointments/AppointmentList";
 import {decryptData, userSecuredRole} from "../security/securityConfig.js";
 import CreateBlogPostPage from "./CreateBlogPostPage.jsx";
+import AdminAppointmentList from "../components/appointments/AdminAppointmentList.jsx";
+import CreateServicePage from "./CreateServicePage.jsx";
 
 /**
  * UserDashboard component
@@ -19,7 +21,7 @@ const UserDashboardPage = () => {
       (state) => state.auth
    );
    const [activeTab, setActiveTab] = useState("summary");
-   const canCreateBlogPosts = user && user.roles && (user.roles.includes(decryptData(userSecuredRole())));
+   const hasSecuredRole = user && user.roles && (user.roles.includes(decryptData(userSecuredRole())));
 
    if (loading) return <div>Loading...</div>;
    if (!isAuthenticated || !user) return <Navigate to="/login" replace/>;
@@ -39,8 +41,12 @@ const UserDashboardPage = () => {
             return <ServiceBooking/>;
          case "appointments":
             return <AppointmentList/>;
+         case "adminAppointments":
+            return <AdminAppointmentList/>;
          case "createBlog":
             return <CreateBlogPostPage/>;
+         case "createService":
+            return <CreateServicePage/>;
          default:
             return null;
       }
@@ -58,8 +64,15 @@ const UserDashboardPage = () => {
             <button onClick={() => setActiveTab("appointments")}>
                Appointments
             </button>
-            {canCreateBlogPosts && (
+            {hasSecuredRole && (
+               <button onClick={() => setActiveTab("adminAppointments")}>Manage All Appointments</button>
+            )}
+            {hasSecuredRole && (
                <button onClick={() => setActiveTab("createBlog")}>Create Blog Post</button>
+            )}
+
+            {hasSecuredRole && (
+               <button onClick={() => setActiveTab("createService")}>Create a Service</button>
             )}
          </div>
          <div className="dashboard-content">{renderActiveTab()}</div>

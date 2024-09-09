@@ -1,5 +1,6 @@
 package com.goalglo.entities;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -42,6 +43,7 @@ public class Goal {
   @Column(name = "current_amount", nullable = false)
   private BigDecimal currentAmount;
 
+   @JsonFormat(pattern = "yyyy-MM-dd")
   private LocalDate deadline;
 
   @Column(name = "created_at")

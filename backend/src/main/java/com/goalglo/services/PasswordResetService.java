@@ -4,6 +4,8 @@ import com.goalglo.aws.AwsSesService;
 import com.goalglo.common.ResourceNotFoundException;
 import com.goalglo.common.TokenCommons;
 import com.goalglo.config.SecretConfig;
+import com.goalglo.dto.PasswordResetConfirmDTO;
+import com.goalglo.dto.PasswordResetRequestDTO;
 import com.goalglo.entities.EmailVerificationToken;
 import com.goalglo.entities.User;
 import com.goalglo.repositories.EmailVerificationTokenRepository;
@@ -37,13 +39,14 @@ public class PasswordResetService {
       this.uuidTokenService = uuidTokenService;
       this.secretConfig = secretConfig;
    }
+
    /**
-    * Initiates the password reset process by generating a password reset token and sending a password reset email.
+    * Initiates the password reset process by generating a token and sending a password reset email to the user's registered email address.
     *
-    * @param email The email of the user who wants to reset their password.
+    * @param passwordResetRequestDTO The DTO containing the user's email address.
     */
-   public void initiatePasswordReset(String email) {
-      User user = userRepository.findByEmail(email)
+   public void initiatePasswordReset(PasswordResetRequestDTO passwordResetRequestDTO) {
+      User user = userRepository.findByEmail(passwordResetRequestDTO.getEmail())
          .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
       // Generate and save password reset token
@@ -66,7 +69,7 @@ public class PasswordResetService {
 
       String subject = emailTemplateService.getSubjectByTemplateName(passwordResetEmailTemplate);
       String body = emailTemplateService.getBodyByTemplateName(passwordResetEmailTemplate)
-         .replace("{reset_url}", domain + "reset-password?token=" + token);
+         .replace("{reset_url}", domain + "/password-reset-confirm?token=" + token);
 
       awsSesService.sendEmail(user.getEmail(), subject, body);
    }
@@ -77,8 +80,8 @@ public class PasswordResetService {
     * @param token       The password reset token.
     * @param newPassword The new password to be set.
     */
-   public void resetPassword(String token, String newPassword) {
-      EmailVerificationToken resetToken = emailVerificationTokenRepository.findByToken(token)
+   public void resetPassword(PasswordResetConfirmDTO passwordResetConfirmDTO) {
+      EmailVerificationToken resetToken = emailVerificationTokenRepository.findByToken(passwordResetConfirmDTO.getToken())
          .orElseThrow(() -> new ResourceNotFoundException("Invalid or expired token"));
 
       if (resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
@@ -86,7 +89,7 @@ public class PasswordResetService {
       }
 
       User user = resetToken.getUser();
-      user.setPassword(passwordEncoder.encode(newPassword));
+      user.setPassword(passwordEncoder.encode(passwordResetConfirmDTO.getNewPassword()));
       userRepository.save(user);
 
       emailVerificationTokenRepository.delete(resetToken);  // Token should not be reused

@@ -28,8 +28,8 @@ public class AccountSummaryController {
    */
   @GetMapping
   public ResponseEntity<AccountSummaryDTO> getAccountSummary(Authentication authentication) {
-    String username = authentication.getName();
-    AccountSummaryDTO summary = accountSummaryService.getAccountSummary(username);
+
+    AccountSummaryDTO summary = accountSummaryService.getAccountSummary(authentication);
     return ResponseEntity.ok(summary);
   }
 }

@@ -20,6 +20,13 @@ public interface BlogPostRepository extends JpaRepository<BlogPost, UUID> {
     */
    List<BlogPost> findByPublished(boolean published);
 
+   /**
+    * Finds the top 3 blog posts by creation date in descending order.
+    *
+    * @return A list of the top 3 blog posts by creation date in descending order.
+    */
+   List<BlogPost> findTop10ByPublishedTrueOrderByCreatedAtDesc();
+
 
    /**
     * Finds all blog posts by a specific author.

@@ -6,7 +6,7 @@ import com.goalglo.dto.BlogPostDTO;
 import com.goalglo.entities.BlogPost;
 import com.goalglo.entities.User;
 import com.goalglo.repositories.BlogPostRepository;
-import com.goalglo.repositories.UserRepository;
+import com.goalglo.tokens.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ public class BlogPostService {
    private final BlogPostRepository blogPostRepository;
    private final SecretConfig secretConfig;
    private final AwsS3Service awsS3Service;
-   private final UserRepository userRepository;
+   private final JwtUtils jwtUtils;
 
    /**
     * Constructs a new BlogPostService with the specified BlogPostRepository.
@@ -36,11 +36,11 @@ public class BlogPostService {
     */
    @Autowired
    public BlogPostService(BlogPostRepository blogPostRepository, SecretConfig secretConfig, AwsS3Service awsS3Service,
-                          UserRepository userRepository) {
+                          JwtUtils jwtUtils) {
       this.blogPostRepository = blogPostRepository;
       this.secretConfig = secretConfig;
       this.awsS3Service = awsS3Service;
-      this.userRepository = userRepository;
+      this.jwtUtils = jwtUtils;
 
    }
 
@@ -55,12 +55,12 @@ public class BlogPostService {
     * @throws IOException if the image file cannot be read
     */
    public BlogPostDTO createBlogPost(BlogPostDTO blogPostDTO, Authentication authentication, MultipartFile image) throws IOException {
-      User currentUser = userRepository.findByUsername(authentication.getName())
-         .orElseThrow(() -> new RuntimeException("User not found"));
 
       BlogPost blogPost = new BlogPost(blogPostDTO);
-      blogPost.setAuthor(currentUser);
-      blogPost.setPublished(currentUser.getRoles().stream()
+
+      blogPost.setAuthor(getCurrentUser(authentication));
+
+      blogPost.setPublished(getCurrentUser(authentication).getRoles().stream()
          .anyMatch(role -> secretConfig.getRoles().getSecuredRole().equals(role.getName())));
 
       if (image != null && !image.isEmpty()) {
@@ -83,21 +83,43 @@ public class BlogPostService {
    }
 
    /**
-    * Updates an existing blog post.
+    * Updates a blog post.
     *
-    * @param id       the UUID of the blog post to update
-    * @param blogPost the updated blog post
-    * @return the updated blog post, or an empty Optional if the blog post was not
-    *         found
+    * @param id the UUID of the blog post to update
+    * @param blogPostDTO the updated blog post data
+    * @param image the new image file to upload
+    * @param authentication the authentication object containing the current user
+    * @return the updated blog post
+    * @throws IOException if the image file cannot be read
     */
-   public Optional<BlogPostDTO> updateBlogPost(UUID id, BlogPost blogPost) {
-      return blogPostRepository.findById(id).map(existingBlogPost -> {
-         existingBlogPost.setTitle(blogPost.getTitle());
-         existingBlogPost.setContent(blogPost.getContent());
-         existingBlogPost.setPublished(blogPost.isPublished());
-         BlogPost updatedBlogPost = blogPostRepository.save(existingBlogPost);
-         return new BlogPostDTO(updatedBlogPost);
-      });
+   public BlogPostDTO updateBlogPost(UUID id, BlogPostDTO blogPostDTO, MultipartFile image, Authentication authentication) throws IOException {
+      BlogPost existingBlogPost = blogPostRepository.findById(id)
+         .orElseThrow(() -> new RuntimeException("Blog post not found"));
+
+      User currentUser = getCurrentUser(authentication);
+
+      // Check if the current user is the author or has admin rights
+      if (!existingBlogPost.getAuthor().getId().equals(currentUser.getId()) &&
+         currentUser.getRoles().stream().noneMatch(role -> secretConfig.getRoles().getSecuredRole().equals(role.getName()))) {
+         throw new RuntimeException("You don't have permission to edit this blog post");
+      }
+
+      existingBlogPost.setTitle(blogPostDTO.getTitle());
+      existingBlogPost.setContent(blogPostDTO.getContent());
+      existingBlogPost.setPublished(blogPostDTO.isPublished());
+
+      if (image != null && !image.isEmpty()) {
+         // Delete old image if it exists
+         if (existingBlogPost.getImageUrl() != null) {
+            awsS3Service.deleteS3Object(existingBlogPost.getImageUrl());
+         }
+         // Upload new image
+         String newImageUrl = awsS3Service.uploadFile(image);
+         existingBlogPost.setImageUrl(newImageUrl);
+      }
+
+      BlogPost updatedBlogPost = blogPostRepository.save(existingBlogPost);
+      return new BlogPostDTO(updatedBlogPost);
    }
 
    /**
@@ -126,4 +148,38 @@ public class BlogPostService {
          .collect(Collectors.toList());
    }
 
+   /**
+    * Retrieves all published blog posts.
+    *
+    * @return a list of all published blog posts
+    */
+   public List<BlogPostDTO> findAllPublishedBlogPosts() {
+      return blogPostRepository.findByPublishedTrue().stream()
+         .map(BlogPostDTO::new)
+         .collect(Collectors.toList());
+   }
+
+
+   /**
+    * Retrieves the latest blog posts.
+    *
+    * @return a list of the latest blog post DTOs
+    */
+   public List<BlogPostDTO> findLatestBlogPosts() {
+      return blogPostRepository.findTop10ByPublishedTrueOrderByCreatedAtDesc().stream()
+         .map(BlogPostDTO::new)
+         .collect(Collectors.toList());
+   }
+
+   /**
+    * Retrieves the current user based on the authentication object.
+    *
+    * @param authentication The authentication object containing the current user's information.
+    * @return The User object representing the current user.
+    * @throws RuntimeException If the user is not found.
+    */
+   private User getCurrentUser(Authentication authentication) {
+      return jwtUtils.getCurrentUser(authentication)
+         .orElseThrow(() -> new RuntimeException("User not found"));
+   }
 }

@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
+import {useNavigate, useParams} from "react-router-dom";
 import {fetchServices} from "../../redux/actions/serviceActions";
 import {bookAppointment, fetchAvailableTimeSlots,} from "../../redux/actions/appointmentActions";
 
@@ -13,6 +14,9 @@ import {bookAppointment, fetchAvailableTimeSlots,} from "../../redux/actions/app
  */
 const ServiceBooking = () => {
    const dispatch = useDispatch();
+   const navigate = useNavigate();
+   const {id: preSelectedServiceId} = useParams(); // Get the service ID from URL if available
+
    const {
       services,
       loading: servicesLoading,
@@ -37,12 +41,23 @@ const ServiceBooking = () => {
       dispatch(fetchAvailableTimeSlots());
    }, [dispatch]);
 
+   useEffect(() => {
+      if (preSelectedServiceId && services.length > 0) {
+         setSelectedService(preSelectedServiceId);
+      }
+   }, [preSelectedServiceId, services]);
+
    const handleBooking = (e) => {
       e.preventDefault();
       if (selectedService && selectedTimeSlot) {
+         const selectedServiceDetails = services.find(service => service.id === selectedService);
+         const selectedTimeSlotDetails = availableTimeSlots.find(slot => slot.id === selectedTimeSlot);
          const bookingData = {
             serviceId: selectedService,
+            serviceName: selectedServiceDetails.name,
             timeSlotId: selectedTimeSlot,
+            startTime: selectedTimeSlotDetails.startTime,
+            endTime: selectedTimeSlotDetails.endTime,
             notes,
             firstName,
             lastName,
@@ -51,15 +66,7 @@ const ServiceBooking = () => {
             address,
          };
          dispatch(bookAppointment(bookingData));
-         // Reset form fields after booking
-         setSelectedService("");
-         setSelectedTimeSlot("");
-         setNotes("");
-         setFirstName("");
-         setLastName("");
-         setEmail("");
-         setPhoneNumber("");
-         setAddress("");
+         navigate("/booking-confirmation");
       }
    };
 

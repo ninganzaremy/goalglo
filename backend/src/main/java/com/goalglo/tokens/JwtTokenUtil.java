@@ -26,6 +26,7 @@ public class JwtTokenUtil {
          .expiresAt(now.plusSeconds(tokenValidity))
          .subject(user.getUsername())
          .claim("firstName", user.getFirstName())
+         .claim("userId", user.getId().toString())
          .claim("roles", roles)
          .build();
       JwsHeader jwsHeader = JwsHeader.with(() -> "HS512").type("JWT").build();

@@ -6,23 +6,30 @@ export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const REGISTER_FAILURE = 'REGISTER_FAILURE';
 
 /**
- * Action creator for registering a new user.
- *
- * This action creator makes an API request to register a new user and dispatches
- * appropriate actions based on the result of the request.
- *
- * @param {string} username - The user's username
- * @param {string} email - The user's email
- * @param {string} password - The user's password
- * @returns {Function} A thunk function that dispatches actions based on API response.
- * @throws Will throw an error if the API request fails.
+ * Action creator for registering a user.
+ * @param {string} username - The username of the user.
+ * @param {string} email - The email of the user.
+ * @param {string} password - The password of the user.
+ * @param {string} firstName - The first name of the user.
+ * @param {string} lastName - The last name of the user.
+ * @param {string} phoneNumber - The phone number of the user.
+ * @param {string} address - The address of the user.
+ * @returns {Function} A Redux thunk function that dispatches the appropriate actions.
  */
-export const registerUser = (username, email, password) => {
+export const registerUser = (username, email, password, firstName, lastName, phoneNumber, address) => {
    return async (dispatch) => {
       dispatch({ type: REGISTER_REQUEST });
 
       try {
-         const response = await apiService.post('/users/register', { username, email, password });
+         const response = await apiService.post('/users/register', {
+            username,
+            email,
+            password,
+            firstName,
+            lastName,
+            phoneNumber,
+            address
+         });
 
          dispatch({
             type: REGISTER_SUCCESS,

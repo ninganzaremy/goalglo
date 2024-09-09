@@ -4,8 +4,9 @@ import com.goalglo.dto.AccountSummaryDTO;
 import com.goalglo.entities.AccountSummary;
 import com.goalglo.entities.User;
 import com.goalglo.repositories.AccountSummaryRepository;
-import com.goalglo.repositories.UserRepository;
+import com.goalglo.tokens.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,12 +15,12 @@ import java.math.BigDecimal;
 public class AccountSummaryService {
 
   private final AccountSummaryRepository accountSummaryRepository;
-  private final UserRepository userRepository;
+  private final JwtUtils jwtUtils;
 
   @Autowired
-  public AccountSummaryService(AccountSummaryRepository accountSummaryRepository, UserRepository userRepository) {
+  public AccountSummaryService(AccountSummaryRepository accountSummaryRepository, JwtUtils jwtUtils) {
     this.accountSummaryRepository = accountSummaryRepository;
-    this.userRepository = userRepository;
+    this.jwtUtils = jwtUtils;
   }
 
   /**
@@ -28,11 +29,11 @@ public class AccountSummaryService {
    * @param username The username of the user.
    * @return The AccountSummaryDTO containing the account summary details.
    */
-  public AccountSummaryDTO getAccountSummary(String username) {
-    User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new RuntimeException("User not found"));
-    AccountSummary summary = accountSummaryRepository.findByUserId(user.getId())
-        .orElseGet(() -> createDefaultAccountSummary(user));
+  public AccountSummaryDTO getAccountSummary(Authentication authentication) {
+    User currentUser = jwtUtils.getCurrentUser(authentication).orElseThrow(() -> new RuntimeException("User not found"));
+
+    AccountSummary summary = accountSummaryRepository.findByUserId(currentUser.getId())
+       .orElseGet(() -> createDefaultAccountSummary(currentUser));
     return convertToDTO(summary);
   }
 

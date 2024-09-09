@@ -6,6 +6,7 @@ import com.goalglo.common.TokenCommons;
 import com.goalglo.config.SecretConfig;
 import com.goalglo.dto.AppointmentDTO;
 import com.goalglo.dto.UserDTO;
+import com.goalglo.dto.VerifyEmailDTO;
 import com.goalglo.entities.EmailVerificationToken;
 import com.goalglo.entities.Role;
 import com.goalglo.entities.User;
@@ -106,7 +107,10 @@ public class UserService {
       existingUser.setPassword(passwordEncoder.encode(newUser.getPassword()));
       existingUser.setEmailVerified(false);
       existingUser.addRole(publicRole);
-
+      existingUser.setFirstName(newUser.getFirstName());
+      existingUser.setLastName(newUser.getLastName());
+      existingUser.setPhoneNumber(newUser.getPhoneNumber());
+      existingUser.setAddress(newUser.getAddress());
       User savedUser = userRepository.save(existingUser);
       sendVerificationEmail(savedUser, uuidTokenService.generateUuidToken(savedUser));
       return new UserDTO(savedUser);
@@ -129,14 +133,16 @@ public class UserService {
       awsSesService.sendEmail(user.getEmail(), subject, body);
    }
 
+
    /**
-    * Verifies the user's email based on the provided token.
+    * Verifies the email of a user using the provided token.
     *
-    * @param token The email verification token.
-    * @return boolean
+    * @param VerifyEmailDTO The DTO containing the token for email verification.
+    * @return `true` if the email was successfully verified, `false` otherwise.
+    * @throws TokenCommons If the token is invalid or expired.
     */
-   public boolean verifyEmailToken(String token) {
-      EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(token)
+   public boolean verifyEmailToken(VerifyEmailDTO VerifyEmailDTO) {
+      EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(VerifyEmailDTO.getToken())
          .orElseThrow(() -> new ResourceNotFoundException("Invalid or expired token"));
 
       if (verificationToken.getExpirationDate().isBefore(LocalDateTime.now())) {

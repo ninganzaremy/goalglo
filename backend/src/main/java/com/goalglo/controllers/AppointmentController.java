@@ -41,8 +41,7 @@ public class AppointmentController {
    public ResponseEntity<AppointmentDTO> bookAppointment(@RequestBody AppointmentDTO appointmentDTO,
                                                          @PathVariable UUID timeSlotId,
                                                          Authentication authentication) {
-      String username = (authentication != null) ? authentication.getName() : null;
-      AppointmentDTO createdAppointment = appointmentService.bookAppointment(appointmentDTO, timeSlotId, username);
+      AppointmentDTO createdAppointment = appointmentService.bookAppointment(appointmentDTO, timeSlotId, authentication);
       return new ResponseEntity<>(createdAppointment, HttpStatus.CREATED);
    }
 
@@ -81,9 +80,7 @@ public class AppointmentController {
     */
    @GetMapping
    public ResponseEntity<List<AppointmentDTO>> getUserAppointments(Authentication authentication) {
-      String username = authentication.getName();
-
-      List<AppointmentDTO> appointments = appointmentService.findAppointmentsByAuthenticatedUser(username);
+      List<AppointmentDTO> appointments = appointmentService.findUserAppointments(authentication);
       return new ResponseEntity<>(appointments, HttpStatus.OK);
    }
 
@@ -97,24 +94,29 @@ public class AppointmentController {
     *         exist.
     */
    @PutMapping("/{id}")
-   public ResponseEntity<AppointmentDTO> updateAppointment(@PathVariable UUID id,
-                                                           @RequestBody AppointmentDTO appointmentDTO) {
-      return appointmentService.updateAppointment(id, appointmentDTO)
+   public ResponseEntity<AppointmentDTO> updateAppointment(
+      @PathVariable UUID id,
+      @RequestBody AppointmentDTO appointmentDTO,
+      Authentication authentication) {
+      return appointmentService.updateAppointment(id, appointmentDTO, authentication)
          .map(updatedAppointment -> new ResponseEntity<>(updatedAppointment, HttpStatus.OK))
          .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
    }
 
+
    /**
-    * Deletes an appointment by its ID.
+    * Cancels an appointment.
     *
-    * @param id The UUID of the appointment to delete.
-    * @return A ResponseEntity with HTTP status NO_CONTENT if deleted, or HTTP
-    *         status NOT_FOUND if the appointment doesn't exist.
+    * @param id             The UUID of the appointment to cancel.
+    * @param authentication The authentication object to get the logged-in user, if
+    *                       any.
+    * @return A ResponseEntity with HTTP status NO_CONTENT if successful, or
+    *         NOT_FOUND if the appointment doesn't exist.
     */
-   @DeleteMapping("/{id}")
-   public ResponseEntity<Void> deleteAppointment(@PathVariable UUID id) {
-      boolean deleted = appointmentService.deleteAppointment(id);
-      return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+   @PutMapping("/{id}/cancel")
+   public ResponseEntity<Void> cancelAppointment(@PathVariable UUID id, Authentication authentication) {
+      boolean canceled = appointmentService.cancelAppointment(id, authentication);
+      return canceled ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
    }
 
    /**
@@ -144,6 +146,24 @@ public class AppointmentController {
    public ResponseEntity<List<TimeSlotDTO>> getAvailableSlots() {
       List<TimeSlotDTO> availableSlots = timeSlotService.getAvailableSlots();
       return new ResponseEntity<>(availableSlots, HttpStatus.OK);
+   }
+
+
+   /**
+    * Updates the status of an existing appointment.
+    *
+    * @param id             The UUID of the appointment to update.
+    * @param appointmentDTO The updated appointment data.
+    * @return A ResponseEntity containing the updated appointment DTO if
+    * successful, or HTTP status NOT_FOUND if the appointment doesn't
+    * exist.
+    */
+   @PutMapping("/{id}/status")
+   public ResponseEntity<AppointmentDTO> updateAppointmentStatus(
+      @PathVariable UUID id,
+      @RequestBody AppointmentDTO appointmentDTO) {
+      AppointmentDTO updatedAppointment = appointmentService.updateAppointmentStatus(id, appointmentDTO.getStatus());
+      return ResponseEntity.ok(updatedAppointment);
    }
 
 }

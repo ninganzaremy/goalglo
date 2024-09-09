@@ -31,23 +31,27 @@ public class AwsSesService {
 
    }
 
+
    /**
     * Sends an email using Amazon SES.
     *
     * @param to      The email address of the recipient.
     * @param subject The subject of the email.
-    * @param body    The body of the email.
+    * @param htmlBody The HTML body of the email.
     */
-   public void sendEmail(String to, String subject, String body) {
+   public void sendEmail(String to, String subject, String htmlBody) {
       SendEmailRequest emailRequest = SendEmailRequest.builder()
          .destination(Destination.builder().toAddresses(to).build())
          .message(Message.builder()
             .subject(Content.builder().data(subject).build())
-            .body(Body.builder().text(Content.builder().data(body).build()).build())
+            .body(Body.builder()
+               .html(Content.builder().data(htmlBody).charset("UTF-8").build())
+               .build())
             .build())
          .source(secretConfig.getAws().getSes().getSourceEmail())
          .build();
 
       sesClient.sendEmail(emailRequest);
    }
+
 }
