@@ -8,6 +8,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
@@ -54,6 +55,46 @@ public class AwsS3Service {
 
       // Return the public URL
       return generatePublicUrl(key);
+   }
+
+   /**
+    * Deletes a file from S3.
+    *
+    * @param fileUrl the URL of the file to delete
+    */
+   public void deleteS3Object(String fileUrl) {
+      String key = extractKeyFromUrl(fileUrl);
+      DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+         .bucket(secretConfig.getAwsBucketName())
+         .key(key)
+         .build();
+      s3Client.deleteObject(deleteObjectRequest);
+   }
+
+   /**
+    * Extracts the key from an S3 URL.
+    *
+    * @param fileUrl the URL of the file
+    * @return the key of the file
+    */
+   private String extractKeyFromUrl(String fileUrl) {
+      // Extract the key from the S3 URL
+      String[] parts = fileUrl.split("/");
+      StringBuilder keyBuilder = new StringBuilder();
+
+      // Start from the "blog-images" part
+      boolean startBuilding = false;
+      for (String part : parts) {
+         if (startBuilding || part.equals("blog-images")) {
+            if (!keyBuilder.isEmpty()) {
+               keyBuilder.append("/");
+            }
+            keyBuilder.append(part);
+            startBuilding = true;
+         }
+      }
+
+      return keyBuilder.toString();
    }
 
    /**
