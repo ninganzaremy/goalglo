@@ -1,0 +1,48 @@
+.book-service-page {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+
+  h1 {
+    font-size: 2rem;
+    color: $primary-color;
+    margin-bottom: 1rem;
+  }
+
+  .service-details {
+    background-color: gray;
+    padding: 1rem;
+    border-radius: $border-radius;
+    margin-bottom: 2rem;
+
+    h2 {
+      font-size: 1.5rem;
+      color: $secondary-color;
+    }
+
+    p {
+      margin: 0.5rem 0;
+    }
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+
+    label {
+      margin-top: 1rem;
+    }
+
+    input, select {
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+    }
+
+    button {
+      @extend .btn-primary;
+      margin-top: 1rem;
+    }
+  }
+}
