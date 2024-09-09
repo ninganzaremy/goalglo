@@ -14,7 +14,12 @@ const ServiceCard = ({ service }) => {
       <img src={service.imageUrl} alt={service.name} className="service-image" />
       <h2>{service.name}</h2>
       <p>{service.description}</p>
-      <Link to={`/services/${service.id}`} className="btn-secondary">Learn More</Link>
+       <Link to={`/services/${service.id}`} className="learn-more">
+          Learn More
+       </Link>
+       <Link to={`/book-service/${service.id}`} className="book-now">
+          Book Now
+       </Link>
     </div>
   );
 };

@@ -47,12 +47,26 @@ public class ServiceService {
     *
     * @return A list of all service entities.
     */
-   public List<ServiceDTO> findAllServices() {
+   public List<ServiceDTO> getAllServices() {
       return serviceRepository.findAll().stream()
-         .map(ServiceDTO::new)
+         .map(this::convertToDTO)
          .collect(Collectors.toList());
    }
 
+
+   /**
+    * Converts a ServiceEntity to a ServiceDTO.
+    *
+    * @param serviceEntity The ServiceEntity to be converted.
+    * @return The converted ServiceDTO.
+    */
+   private ServiceDTO convertToDTO(ServiceEntity serviceEntity) {
+      ServiceDTO dto = new ServiceDTO();
+      dto.setId(serviceEntity.getId());
+      dto.setName(serviceEntity.getName());
+      dto.setDescription(serviceEntity.getDescription());
+      return dto;
+   }
    /**
     * Updates an existing service.
     *

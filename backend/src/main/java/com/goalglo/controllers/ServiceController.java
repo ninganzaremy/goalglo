@@ -45,6 +45,7 @@ public class ServiceController {
     */
    @GetMapping
    public ResponseEntity<List<ServiceDTO>> getAllServices() {
-      return new ResponseEntity<>(serviceService.findAllServices(), HttpStatus.OK);
+      List<ServiceDTO> services = serviceService.getAllServices();
+      return ResponseEntity.ok(services);
    }
 }
