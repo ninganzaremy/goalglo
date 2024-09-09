@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {addGoal, deleteGoal, fetchGoals, updateGoal,} from "../../redux/actions/goalActions";
-import GoalForm from "./GoalForm.jsx";
+import GoalForm from "./GoalForm";
 
 /**
  * FinancialGoalTracker component
@@ -13,28 +13,29 @@ import GoalForm from "./GoalForm.jsx";
 const FinancialGoalTracker = () => {
    const dispatch = useDispatch();
    const {goals, loading, error} = useSelector((state) => state.goals);
-   const [newGoal, setNewGoal] = useState({
-      name: "",
-      targetAmount: "",
-      deadline: "",
-   });
+   const [editingGoal, setEditingGoal] = useState(null);
 
    useEffect(() => {
       dispatch(fetchGoals());
    }, [dispatch]);
 
-   const handleAddGoal = (e) => {
-      e.preventDefault();
+   const handleAddGoal = (newGoal) => {
       dispatch(addGoal(newGoal));
-      setNewGoal({name: "", targetAmount: "", deadline: ""});
    };
 
-   const handleUpdateGoal = (id, updatedGoal) => {
-      dispatch(updateGoal(id, updatedGoal));
+   const handleUpdateGoal = (updatedGoal) => {
+      dispatch(updateGoal(updatedGoal.id, updatedGoal));
+      setEditingGoal(null);
    };
 
    const handleDeleteGoal = (id) => {
       dispatch(deleteGoal(id));
+   };
+
+   const formatDate = (dateString) => {
+      if (!dateString) return "No date set";
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? "Invalid date" : date.toLocaleDateString();
    };
 
    if (loading) return <div className="loading">Loading goals...</div>;
@@ -43,25 +44,19 @@ const FinancialGoalTracker = () => {
    return (
       <div className="financial-goal-tracker">
          <h2>Financial Goals</h2>
-         <GoalForm/>
+         <GoalForm
+            onSubmit={editingGoal ? handleUpdateGoal : handleAddGoal}
+            initialGoal={editingGoal}
+         />
          <ul className="goal-list">
             {goals.map((goal) => (
                <li key={goal.id} className="goal-item">
                   <span>
                      {goal.name} - ${goal.targetAmount} by{" "}
-                     {new Date(goal.deadline).toLocaleDateString()}
+                     {formatDate(goal.deadline)}
                   </span>
                   <div className="goal-actions">
-                     <button
-                        onClick={() =>
-                           handleUpdateGoal(goal.id, {
-                              ...goal,
-                              targetAmount: goal.targetAmount + 100,
-                           })
-                        }
-                     >
-                        Increase Target
-                     </button>
+                     <button onClick={() => setEditingGoal(goal)}>Edit</button>
                      <button onClick={() => handleDeleteGoal(goal.id)}>
                         Delete
                      </button>

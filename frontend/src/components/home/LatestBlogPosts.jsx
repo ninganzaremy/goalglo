@@ -1,22 +1,34 @@
+import {useEffect} from 'react';
+import {useDispatch, useSelector} from 'react-redux';
 import {Link} from 'react-router-dom';
 
-/**
- * LatestBlogPosts component
- * @returns {JSX.Element} The rendered LatestBlogPosts component
- * @constructor
- */
+import {fetchLatestBlogPosts} from '../../redux/actions/blogActions';
+
+/*
+LatestBlogPosts component
+This component fetches and displays the latest blog posts from the Redux store
+It uses the `fetchLatestBlogPosts` action creator to retrieve the latest posts
+and displays them in a grid layout
+
+Props: None
+*/
+
 const LatestBlogPosts = () => {
-   //todo implement API to dynamically fetch LatestBlogPosts
-   const blogPosts = [
-      { id: 1, title: '10 Tips for Saving Money', excerpt: 'Learn how to save money effectively...' },
-      { id: 2, title: 'Understanding Investment Risks', excerpt: 'Before investing, its important to...' },
-   ];
+   const dispatch = useDispatch();
+   const {latestBlogPosts, loading, error} = useSelector((state) => state.blog);
+
+   useEffect(() => {
+      dispatch(fetchLatestBlogPosts());
+   }, [dispatch]);
+
+   if (loading) return <div>Loading latest blog posts...</div>;
+   if (error) return <div>Error: {error}</div>;
 
    return (
       <section className="latest-blog-posts">
          <h2>Latest from Our Blog</h2>
          <div className="blog-post-list">
-            {blogPosts.map(post => (
+            {latestBlogPosts.map(post => (
                <div key={post.id} className="blog-post-item">
                   <h3>{post.title}</h3>
                   <p>{post.excerpt}</p>
@@ -29,4 +41,4 @@ const LatestBlogPosts = () => {
    );
 };
 
-   export default LatestBlogPosts;
+export default LatestBlogPosts;

@@ -1,4 +1,4 @@
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch, useSelector} from "react-redux";
 import {registerUser} from "../redux/actions/registerAction.js";
 import {useState} from "react";
 
@@ -10,12 +10,17 @@ import {useState} from "react";
  * The component also displays any error messages received from the server.
  */
 const RegisterPage = () => {
-   const [username, setUsername] = useState('');
-   const [email, setEmail] = useState('');
-   const [password, setPassword] = useState('');
-   const [confirmPassword, setConfirmPassword] = useState('');
+   const [username, setUsername] = useState("");
+   const [email, setEmail] = useState("");
+   const [password, setPassword] = useState("");
+   const [confirmPassword, setConfirmPassword] = useState("");
+   const [firstName, setFirstName] = useState("");
+   const [lastName, setLastName] = useState("");
+   const [phoneNumber, setPhoneNumber] = useState("");
+   const [address, setAddress] = useState("");
+
    const dispatch = useDispatch();
-   const {loading, error, success} = useSelector(state => state.register);
+   const {loading, error, success} = useSelector((state) => state.register);
 
    const handleSubmit = (e) => {
       e.preventDefault();
@@ -23,10 +28,18 @@ const RegisterPage = () => {
          // Handle password mismatch
          return;
       }
-      dispatch(registerUser(username, email, password));
+      dispatch(
+         registerUser(username, email, password, firstName, lastName, phoneNumber, address)
+      );
    };
+
    if (success) {
-      return <div>Registration successful! Please check your email to verify your account.</div>;
+      return (
+         <div>
+            Registration successful! Please check your email to verify your
+            account.
+         </div>
+      );
    }
 
    return (
@@ -64,6 +77,49 @@ const RegisterPage = () => {
                   />
                </div>
                <div className="form-group">
+                  <label htmlFor="firstName">First Name</label>
+                  <input
+                     id="firstName"
+                     type="text"
+                     placeholder="First Name"
+                     value={firstName}
+                     onChange={(e) => setFirstName(e.target.value)}
+                     required
+                  />
+               </div>
+               <div className="form-group">
+                  <label htmlFor="lastName">Last Name</label>
+                  <input
+                     id="lastName"
+                     type="text"
+                     placeholder="Last Name"
+                     value={lastName}
+                     onChange={(e) => setLastName(e.target.value)}
+                     required
+                  />
+               </div>
+               <div className="form-group">
+                  <label htmlFor="phoneNumber">Phone Number</label>
+                  <input
+                     id="phoneNumber"
+                     type="tel"
+                     placeholder="Phone Number"
+                     value={phoneNumber}
+                     onChange={(e) => setPhoneNumber(e.target.value)}
+                     required
+                  />
+               </div>
+               <div className="form-group">
+                  <label htmlFor="address">Address (Optional)</label>
+                  <input
+                     id="address"
+                     type="text"
+                     placeholder="Address"
+                     value={address}
+                     onChange={(e) => setAddress(e.target.value)}
+                  />
+               </div>
+               <div className="form-group">
                   <label htmlFor="password">Password</label>
                   <input
                      id="password"
@@ -91,7 +147,7 @@ const RegisterPage = () => {
                      type="submit"
                      disabled={loading}
                   >
-                     {loading ? 'Registering...' : 'Register'}
+                     {loading ? "Registering..." : "Register"}
                   </button>
                </div>
             </form>

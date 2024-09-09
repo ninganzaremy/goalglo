@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {loginUser} from "../redux/actions/loginAction.js";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 
 /**
  * Login component
@@ -67,16 +67,12 @@ const LoginPage = () => {
                   />
                </div>
                <div className="form-footer">
-                  <button
-                     className="btn-primary"
-                     type="submit"
-                     disabled={loading}
-                  >
+                  <button className="btn-primary" type="submit" disabled={loading}>
                      {loading ? 'Signing in...' : 'Sign In'}
                   </button>
-                  <a className="forgot-password" href="#">
+                  <Link to="/password-reset-request" className="forgot-password">
                      Forgot Password?
-                  </a>
+                  </Link>
                </div>
             </form>
          </div>
