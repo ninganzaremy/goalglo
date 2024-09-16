@@ -1,6 +1,7 @@
 import {useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {requestPasswordReset} from '../redux/actions/authActions';
+import {usePasswordResetRequestHook} from "../hooks/usePasswordResetRequestHook.js";
 
 /**
  * PasswordResetRequestPage component
@@ -11,7 +12,7 @@ import {requestPasswordReset} from '../redux/actions/authActions';
 const PasswordResetRequestPage = () => {
    const [email, setEmail] = useState('');
    const dispatch = useDispatch();
-   const {loading, success, error} = useSelector(state => state.auth.passwordReset);
+   const {loading, success, error} = usePasswordResetRequestHook();
 
    const handleSubmit = (e) => {
       e.preventDefault();

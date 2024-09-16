@@ -1,7 +1,8 @@
 import {useEffect, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {loginUser} from "../redux/actions/loginAction.js";
 import {Link, useNavigate} from "react-router-dom";
+import {useAuthContext} from "../hooks/useAuthContext";
 
 /**
  * Login component
@@ -13,7 +14,8 @@ const LoginPage = () => {
    const [password, setPassword] = useState('');
    const dispatch = useDispatch();
    const navigate = useNavigate();
-   const {loading, error, isAuthenticated} = useSelector(state => state.auth);
+
+   const {isAuthenticated, loading, error} = useAuthContext();
 
    const handleSubmit = async (e) => {
       e.preventDefault();

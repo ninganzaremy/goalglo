@@ -1,8 +1,9 @@
-import { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { logoutUser, checkAuthStatus } from "../../redux/actions/loginAction";
+import {memo, useEffect} from "react";
+import {Link, useNavigate} from "react-router-dom";
+import {useDispatch} from "react-redux";
+import {checkAuthStatus, logoutUser} from "../../redux/actions/loginAction";
 import logo from "../../assets/images/vite.svg";
+import {useAuthContext} from "../../hooks/useAuthContext";
 
 /**
  * Header component
@@ -11,9 +12,7 @@ import logo from "../../assets/images/vite.svg";
 const Header = () => {
    const dispatch = useDispatch();
    const navigate = useNavigate();
-   const { isAuthenticated, user, loading } = useSelector(
-      (state) => state.auth
-   );
+   const {isAuthenticated, user, loading} = useAuthContext();
 
    useEffect(() => {
       dispatch(checkAuthStatus());
@@ -88,4 +87,4 @@ const Header = () => {
    );
 };
 
-export default Header;
+export default memo(Header);

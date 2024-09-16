@@ -1,7 +1,6 @@
-import {useEffect, useState} from "react";
-import {useDispatch, useSelector} from "react-redux";
-import {addGoal, deleteGoal, fetchGoals, updateGoal,} from "../../redux/actions/goalActions";
+import {useState} from "react";
 import GoalForm from "./GoalForm";
+import {useFinancialGoalsHook} from "../../hooks/useFinancialGoalsHook.js";
 
 /**
  * FinancialGoalTracker component
@@ -11,26 +10,9 @@ import GoalForm from "./GoalForm";
  * The component also handles loading and error states.
  */
 const FinancialGoalTracker = () => {
-   const dispatch = useDispatch();
-   const {goals, loading, error} = useSelector((state) => state.goals);
+
+   const {goals, loading, error, handleAddGoal, handleUpdateGoal, handleDeleteGoal} = useFinancialGoalsHook();
    const [editingGoal, setEditingGoal] = useState(null);
-
-   useEffect(() => {
-      dispatch(fetchGoals());
-   }, [dispatch]);
-
-   const handleAddGoal = (newGoal) => {
-      dispatch(addGoal(newGoal));
-   };
-
-   const handleUpdateGoal = (updatedGoal) => {
-      dispatch(updateGoal(updatedGoal.id, updatedGoal));
-      setEditingGoal(null);
-   };
-
-   const handleDeleteGoal = (id) => {
-      dispatch(deleteGoal(id));
-   };
 
    const formatDate = (dateString) => {
       if (!dateString) return "No date set";
