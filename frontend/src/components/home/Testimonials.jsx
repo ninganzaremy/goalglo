@@ -1,16 +1,30 @@
-/*
-Testimonials component
-This component fetches and displays a list of testimonials from a simulated API.
-The testimonials are hardcoded for demonstration purposes, but in a real-world scenario,
-they could be dynamically fetched from an API.
+import {useAuthContext} from "../../hooks/useAuthContext";
+import {useTestimonialsHook} from "../../hooks/useTestimonialsHook.js";
 
-*/
+/**
+ * Testimonials component
+ * This component fetches and displays the list of testimonials from the Redux store.
+ * If the user is authenticated, it provides a form to add or edit a testimonial.
+ * The component handles loading and error states.
+ */
 const Testimonials = () => {
-   //todo implement API to dynamically fetch Testimonials
-   const testimonials = [
-      { id: 1, name: 'John Doe', text: 'GoalGlo helped me achieve financial freedom!' },
-      { id: 2, name: 'Jane Smith', text: 'The personalized advice was invaluable for my retirement planning.' },
-   ];
+
+   const {user} = useAuthContext();
+
+   const {
+      testimonials,
+      loading,
+      error,
+      editingId,
+      newTestimonial,
+      handleEdit,
+      handleCancelEdit,
+      handleTestimonialChange,
+      handleSubmit
+   } = useTestimonialsHook();
+
+   if (loading) return <div>Loading...</div>;
+   if (error) return <div>Error: {error}</div>;
 
    return (
       <section className="testimonials">
@@ -18,13 +32,30 @@ const Testimonials = () => {
          <div className="testimonial-list">
             {testimonials.map(testimonial => (
                <div key={testimonial.id} className="testimonial-item">
-                  <p>"{testimonial.text}"</p>
+                  <p>{testimonial.text}</p>
                   <p className="testimonial-author">- {testimonial.name}</p>
+                  {user && user.userId === testimonial.userId && testimonial.status === 'APPROVED' && (
+                     <button onClick={() => handleEdit(testimonial)}>Edit</button>
+                  )}
                </div>
             ))}
          </div>
+         {user && (
+            <form onSubmit={handleSubmit} className="testimonial-form">
+               <textarea
+                  value={newTestimonial.text}
+                  onChange={handleTestimonialChange}
+                  placeholder="Share your experience..."
+               />
+               <button type="submit">{editingId ? 'Update' : 'Submit'} Testimonial</button>
+               {editingId && (
+                  <button type="button" onClick={handleCancelEdit}>Cancel Edit</button>
+               )}
+            </form>
+         )}
       </section>
    );
 };
+
 
 export default Testimonials;
