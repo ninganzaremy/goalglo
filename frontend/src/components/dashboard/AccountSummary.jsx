@@ -1,6 +1,4 @@
-import { useDispatch, useSelector } from "react-redux";
-import { fetchAccountSummary } from "../../redux/actions/accountSummaryActions";
-import { useEffect } from "react";
+import {useAccountSummaryHook} from "../../hooks/useAccountSummaryHook.js";
 
 /**
  * AccountSummary component
@@ -12,14 +10,8 @@ import { useEffect } from "react";
  * @constructor
  */
 const AccountSummary = () => {
-   const dispatch = useDispatch();
-   const { balance, income, expenses, loading, error } = useSelector(
-      (state) => state.accountSummary || {}
-   );
 
-   useEffect(() => {
-      dispatch(fetchAccountSummary());
-   }, [dispatch]);
+   const {balance, income, expenses, loading, error} = useAccountSummaryHook();
 
    if (loading) return <div>Loading account summary...</div>;
    if (error) return <div>Error: {error}</div>;

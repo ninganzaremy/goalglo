@@ -1,4 +1,11 @@
-import {CLEAR_LOGIN_ERROR, LOGIN_FAILURE, LOGIN_REQUEST, LOGIN_SUCCESS, LOGOUT} from '../actions/loginAction';
+import {
+   CHECK_TOKEN_EXPIRATION,
+   CLEAR_LOGIN_ERROR,
+   LOGIN_FAILURE,
+   LOGIN_REQUEST,
+   LOGIN_SUCCESS,
+   LOGOUT
+} from '../actions/loginAction';
 import {
    PASSWORD_RESET_CONFIRM_FAILURE,
    PASSWORD_RESET_CONFIRM_REQUEST,
@@ -66,7 +73,6 @@ const authReducer = (state = initialState, action) => {
             ...state,
             error: null,
          };
-
       case PASSWORD_RESET_CONFIRM_REQUEST:
          return {
             ...state,
@@ -94,7 +100,6 @@ const authReducer = (state = initialState, action) => {
                error: action.payload,
             },
          };
-
       case PASSWORD_RESET_REQUEST:
          return {
             ...state,
@@ -113,6 +118,17 @@ const authReducer = (state = initialState, action) => {
                error: null
             }
          };
+
+      case CHECK_TOKEN_EXPIRATION:
+         if (state.user && state.user.exp * 1000 < Date.now()) {
+            return {
+               ...initialState,
+               isAuthenticated: false,
+               user: null
+            };
+         }
+         return state;
+
       case PASSWORD_RESET_FAILURE:
          return {
             ...state,
@@ -126,5 +142,4 @@ const authReducer = (state = initialState, action) => {
          return state;
    }
 };
-
 export default authReducer;

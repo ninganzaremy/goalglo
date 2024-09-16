@@ -1,5 +1,4 @@
 import {combineReducers} from '@reduxjs/toolkit';
-import loginReducer from './loginReducer.js';
 import createServiceReducer from './createServiceReducer.js';
 import registerReducer from './registerReducer';
 import userReducer from "./userReducer.js";
@@ -11,6 +10,7 @@ import accountSummaryReducer from "./accountSummaryReducer.js";
 import recentTransactionsReducer from "./recentTransactionsReducer.js";
 import appointmentsReducer from "./appointmentsReducer.js";
 import authReducer from "./authReducer.js";
+import testimonialReducer from "./testimonialReducer.js";
 
 /**
  * Root reducer for the application.
@@ -18,7 +18,6 @@ import authReducer from "./authReducer.js";
  */
 const rootReducer = combineReducers({
    auth: authReducer,
-   login: loginReducer,
    createService: createServiceReducer,
    register: registerReducer,
    user: userReducer,
@@ -28,7 +27,8 @@ const rootReducer = combineReducers({
    goals: goalReducer,
    accountSummary: accountSummaryReducer,
    recentTransactions: recentTransactionsReducer,
-   appointments: appointmentsReducer
+   appointments: appointmentsReducer,
+   testimonials: testimonialReducer,
 });
 
 export default rootReducer;
