@@ -4,16 +4,21 @@ import {fetchBlogPostById, fetchBlogPosts} from "../redux/actions/blogActions";
 import BlogPostCard from "../components/blog/BlogPostCard";
 import EditBlogPostForm from "../components/blog/EditBlogPostForm";
 import Pagination from "../components/common/Pagination";
-import {decryptData, userSecuredRole} from "../security/securityConfig.js";
+import {useAuthContext} from "../hooks/useAuthContext";
 
+/**
+ * BlogPage component
+ * This component represents the blog page.
+ * It fetches and displays the list of blog posts from the Redux store.
+ * If the user has the necessary permissions, it provides an "Edit" button for each post.
+ */
 const BlogPage = () => {
    const dispatch = useDispatch();
+   const {hasSecuredRole} = useAuthContext();
+
    const {posts, loading, error, totalPages} = useSelector((state) => state.blog);
-   const {user} = useSelector((state) => state.auth);
    const [currentPage, setCurrentPage] = useState(1);
    const [editingPostId, setEditingPostId] = useState(null);
-
-   const canManagePosts = user && user.roles && user.roles.includes(decryptData(userSecuredRole()));
 
    useEffect(() => {
       dispatch(fetchBlogPosts(currentPage));
@@ -60,7 +65,7 @@ const BlogPage = () => {
                      ) : (
                         <>
                            <BlogPostCard post={post}/>
-                           {canManagePosts && (
+                           {hasSecuredRole && (
                               <button onClick={() => handleEditClick(post.id)}>
                                  Edit
                               </button>

@@ -46,7 +46,7 @@ public class PasswordResetService {
     * @param passwordResetRequestDTO The DTO containing the user's email address.
     */
    public void initiatePasswordReset(PasswordResetRequestDTO passwordResetRequestDTO) {
-      User user = userRepository.findByEmail(passwordResetRequestDTO.getEmail())
+      User user = userRepository.findByEmail(passwordResetRequestDTO.getEmail().toLowerCase().trim())
          .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
       // Generate and save password reset token

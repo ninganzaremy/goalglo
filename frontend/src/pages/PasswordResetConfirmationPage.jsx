@@ -1,7 +1,8 @@
 import {useEffect, useState} from "react";
-import {useDispatch, useSelector} from "react-redux";
+import {useDispatch} from "react-redux";
 import {useLocation, useNavigate} from "react-router-dom";
 import {confirmPasswordReset} from "../redux/actions/authActions";
+import {usePasswordResetConfirmHook} from "../hooks/usePasswordResetConfirmHook.js";
 
 /**
  * PasswordResetConfirmationPage component
@@ -14,14 +15,10 @@ const PasswordResetConfirmationPage = () => {
 
    const dispatch = useDispatch();
    const navigate = useNavigate();
+   const {loading, success, resetError} = usePasswordResetConfirmHook();
 
    const token = new URLSearchParams(useLocation().search).get('token');
 
-   const {
-      loading,
-      success,
-      error: resetError,
-   } = useSelector((state) => state.auth.passwordResetConfirm);
 
    useEffect(() => {
       if (success) {

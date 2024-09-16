@@ -19,7 +19,10 @@ export const CHECK_TOKEN_EXPIRATION = "CHECK_TOKEN_EXPIRATION";
 
 
 export const loginRequest = () => ({type: LOGIN_REQUEST});
-export const loginSuccess = (user) => ({type: LOGIN_SUCCESS, payload: user});
+export const loginSuccess = (userData) => ({
+   type: LOGIN_SUCCESS,
+   payload: userData
+});
 export const loginFailure = (error) => ({
    type: LOGIN_FAILURE,
    payload: error,
@@ -42,10 +45,7 @@ export const loginUser = (credentials) => async (dispatch) => {
       if (token) {
          setEncryptedItem(token);
          const userData = decodeJwtToken(token);
-         // Token expiration handling
          if (isTokenExpired(token)) {
-            dispatch(checkTokenExpiration());
-            dispatch(logoutUser());
             throw new Error("Token has expired");
          }
          dispatch(loginSuccess(userData));
@@ -59,7 +59,6 @@ export const loginUser = (credentials) => async (dispatch) => {
       throw error;
    }
 };
-
 /**
  * Action creator for user logout
  *
