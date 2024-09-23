@@ -1,5 +1,7 @@
+@use "sass:color";
+
 .services-page {
-  padding: 2rem;
+  padding: 4rem 2rem;
   background-color: $background-color;
 
   h1 {
@@ -64,7 +66,7 @@
     transition: background-color 0.3s ease;
 
     &:hover {
-      background-color: darken($secondary-color, 10%);
+      background-color: color.adjust($secondary-color, $lightness: -10%);
     }
   }
 }

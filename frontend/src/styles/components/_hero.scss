@@ -1,35 +1,81 @@
 .hero {
-  background-image: url('../assets/images/hero-bg.jpg');
-  background-size: cover;
-  background-position: center;
-  height: 600px;
+  position: relative;
+  height: 714px;
   display: flex;
   align-items: center;
-  text-align: center;
   color: white;
+  overflow: hidden;
+  background-color: #1a1a1a;
+  background-image: url('../assets/images/hero-bg.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
+  @media (max-width: 768px) {
+    height: 500px;
   }
 
-  h1 {
-    font-size: 3rem;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, rgba(26, 26, 26, 0.9) 0%, rgba(26, 26, 26, 0.7) 50%, rgba(26, 26, 26, 0.2) 100%);
+    z-index: 1;
+  }
+
+  &__content {
+    position: relative;
+    max-width: 50%;
+    padding: 0 40px;
+    margin-left: 5%;
+    z-index: 2;
+    text-align: left;
+
+    @media (max-width: 768px) {
+      max-width: 70%;
+      margin-left: 0;
+    }
+  }
+
+  &__title {
+    font-size: 3.5rem;
     margin-bottom: 20px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    font-weight: bold;
+
+    @media (max-width: 768px) {
+      font-size: 2.5rem;
+    }
   }
 
-  p {
-    font-size: 1.2rem;
+  &__subtitle {
+    font-size: 1.4rem;
     margin-bottom: 30px;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    max-width: 80%;
+
+    @media (max-width: 768px) {
+      font-size: 1.2rem;
+    }
   }
 
-  .cta-button {
-    @include button-style;
+  &__cta-button {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-decoration: none;
+    color: white;
+    background-color: #007bff;
+    border-radius: 4px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 
-    & {
-      padding: 12px 24px;
+    &:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
     }
   }
 }
