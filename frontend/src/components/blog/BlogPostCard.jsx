@@ -1,4 +1,5 @@
 import {Link} from "react-router-dom";
+import DOMPurify from 'dompurify';
 
 /*
 BlogPostCard component
@@ -25,9 +26,13 @@ const formatDate = (dateString) => {
       })
       : "Date not available";
 };
+
 const BlogPostCard = ({post, isAdmin, onEditClick}) => {
+   const sanitizedExcerpt = DOMPurify.sanitize(post.content.substring(0, 150) + "...");
+
    return (
       <div className="blog-post-card">
+         <h3>{post.title}</h3>
          {post.imageUrl && (
             <img
                src={post.imageUrl}
@@ -35,10 +40,14 @@ const BlogPostCard = ({post, isAdmin, onEditClick}) => {
                className="blog-post-image"
             />
          )}
-         <h2>{post.title}</h2>
-         <p>{post.content.substring(0, 150)}...</p>
-         <p>Published on: {formatDate(post.publishedAt)}</p>
-         <p>Author: {post.author ? post.author : "Unknown"}</p>
+         <div
+            className="blog-post-excerpt"
+            dangerouslySetInnerHTML={{__html: sanitizedExcerpt}}
+         />
+         <div className="blog-post-meta">
+            <p>Published on: {formatDate(post.publishedAt)}</p>
+            <p>Author: {post.author ? post.author : "Unknown"}</p>
+         </div>
          {isAdmin && (
             <button onClick={onEditClick} className="edit-button">
                Edit

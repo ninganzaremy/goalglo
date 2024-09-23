@@ -3,6 +3,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {Link} from 'react-router-dom';
 
 import {fetchLatestBlogPosts} from '../../redux/actions/blogActions';
+import BlogPostCard from "../blog/BlogPostCard.jsx";
 
 /*
 LatestBlogPosts component
@@ -30,9 +31,7 @@ const LatestBlogPosts = () => {
          <div className="blog-post-list">
             {latestBlogPosts.map(post => (
                <div key={post.id} className="blog-post-item">
-                  <h3>{post.title}</h3>
-                  <p>{post.excerpt}</p>
-                  <Link to={`/blog/${post.id}`}>Read More</Link>
+                  <BlogPostCard post={post}/>
                </div>
             ))}
          </div>

@@ -1,3 +1,4 @@
+@use "sass:color";
 .create-service-page {
   max-width: 600px;
   margin: 2rem auto;
@@ -70,7 +71,7 @@
       transition: background-color 0.3s ease;
 
       &:hover {
-        background-color: darken($primary-color, 10%);
+        background-color: color.adjust($primary-color, $lightness: -10%);
       }
 
       &:focus {
@@ -78,5 +79,13 @@
         box-shadow: 0 0 0 2px rgba($primary-color, 0.3);
       }
     }
+  }
+
+  .description-preview {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    background-color: #f9f9f9;
   }
 }

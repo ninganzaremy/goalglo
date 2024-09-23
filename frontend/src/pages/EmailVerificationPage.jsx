@@ -1,7 +1,8 @@
-import {useEffect} from "react";
-import {useLocation} from "react-router-dom";
+import {useEffect, useRef} from "react";
+import {useLocation, useNavigate} from "react-router-dom";
 import {useDispatch, useSelector} from "react-redux";
 import {verifyEmail} from "../redux/actions/userActions";
+import useConfirmationState from "../hooks/useConfirmationState.jsx";
 
 /**
  * EmailVerificationPage component
@@ -16,34 +17,52 @@ import {verifyEmail} from "../redux/actions/userActions";
 const EmailVerificationPage = () => {
    const dispatch = useDispatch();
    const location = useLocation();
+   const navigate = useNavigate();
+
    const userState = useSelector((state) => state.user);
-   const emailVerification = userState.emailVerification || {};
-   const { loading = false, success = false, message = "" } = emailVerification;
+   const emailVerification = userState.emailVerification;
+   const {loading = false, success = false, error = false, message = ""} = emailVerification;
+
+   const verificationAttempted = useRef(false);
 
    useEffect(() => {
       const queryParams = new URLSearchParams(location.search);
       const token = queryParams.get("token");
 
-      if (token) {
+      if (token && !verificationAttempted.current) {
+         verificationAttempted.current = true;
          dispatch(verifyEmail(token));
       }
    }, [dispatch, location]);
+
+
+   const handleTryAgain = () => {
+      navigate(0);
+   };
+   const confirmationState = useConfirmationState(loading, success, error, {
+      loadingTitle: "Email Verification in Progress",
+      loadingMessage: "We're verifying your email...",
+      successTitle: "Email Verification Successful!",
+      successMessage: "Your email has been successfully verified. You can now log in to your account.",
+      successActionText: "Go to Login",
+      successActionLink: "/login",
+      errorTitle: "Email Verification Failed",
+      errorMessage: message || "An error occurred during email verification.",
+      errorActionText: "Try Again",
+      errorActionOnClick: handleTryAgain
+   });
+
+   if (confirmationState) {
+      return confirmationState;
+   }
 
    return (
       <div className="verification-container">
          <div className="verification-card">
             <h1 className="verification-title">Email Verification</h1>
-            {loading ? (
-               <p className="verification-message">Verifying your email...</p>
-            ) : (
-               <p
-                  className={`verification-message ${
-                     success ? "success" : "error"
-                  }`}
-               >
-                  {message || "An error occurred during email verification."}
-               </p>
-            )}
+            <p className="verification-message">
+               Waiting for verification process to start...
+            </p>
          </div>
       </div>
    );

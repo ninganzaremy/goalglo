@@ -1,6 +1,7 @@
 import {useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {createBlogPost} from '../redux/actions/blogActions';
+import DOMPurify from "dompurify";
 
 /**
  * Component for creating a new blog post.
@@ -41,10 +42,11 @@ const CreateBlogPostPage = () => {
          console.error('Please fill in all required fields');
          return;
       }
+      const sanitizedContent = DOMPurify.sanitize(formData.content);
 
       const postData = new FormData();
       postData.append('title', formData.title);
-      postData.append('content', formData.content);
+      postData.append('content', sanitizedContent);
       postData.append('slug', formData.slug);
       if (image) {
          postData.append('image', image);
@@ -93,13 +95,12 @@ const CreateBlogPostPage = () => {
             </div>
             <div className="form-group">
                <label htmlFor="content">Content:</label>
-               <textarea
+               <div
                   id="content"
-                  name="content"
-                  value={formData.content}
-                  onChange={handleChange}
-                  required
-                  rows="10"
+                  className="content-editable"
+                  contentEditable
+                  onInput={(e) => handleChange({target: {name: 'content', value: e.currentTarget.innerHTML}})}
+                  dangerouslySetInnerHTML={{__html: formData.content}}
                />
             </div>
             <div className="form-group">

@@ -1,0 +1,60 @@
+.home-page {
+  .section {
+    transition: all 0.5s ease-out;
+    opacity: 0;
+    transform: translateY(20px);
+
+    &.fade-in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    &.slide-in-left {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    &.slide-in-right {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .hero-section {
+    color: $white;
+  }
+
+  .services-section {
+    background-color: $background-color;
+  }
+
+  .about-section {
+    background-color: $white;;
+  }
+
+  .how-it-works-section {
+    background-color: $background-color;
+  }
+
+  .testimonials-section {
+    background-color: $primary-color;
+    color: $white;
+  }
+
+  .blog-section {
+    background-color: $background-color;
+  }
+
+  .cta-section {
+    background-color: $accent-color;
+    color: $white;
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .home-page {
+    .section {
+      padding: 2rem 0;
+    }
+  }
+}

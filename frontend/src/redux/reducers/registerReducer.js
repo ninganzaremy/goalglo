@@ -1,4 +1,4 @@
-import {REGISTER_FAILURE, REGISTER_REQUEST, REGISTER_SUCCESS} from '../actions/registerAction';
+import {REGISTER_FAILURE, REGISTER_REQUEST, REGISTER_SUCCESS, RESET_REGISTRATION} from '../actions/registerAction';
 
 /**
  * Reducer function for handling user registration state.
@@ -42,6 +42,13 @@ const registerReducer = (state = initialState, action) => {
             loading: false,
             error: action.payload,
             success: false
+         };
+      case RESET_REGISTRATION:
+         return {
+            ...state,
+            loading: false,
+            success: false,
+            error: null
          };
       default:
          return state;

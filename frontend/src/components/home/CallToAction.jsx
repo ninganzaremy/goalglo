@@ -1,4 +1,4 @@
-import {Link} from 'react-router-dom';
+import {Link} from "react-router-dom";
 
 /*
  * CallToAction component
@@ -15,9 +15,14 @@ const CallToAction = () => {
    return (
       <section className="call-to-action">
          <div className="container">
-            <h2>Ready to Start Your Journey?</h2>
-            <p>Take the first step towards financial freedom and personal growth with GoalGlo.</p>
-            <Link to="/book" className="btn btn-primary">Book Your Free Consultation</Link>
+            <h2 className="section-title">Ready to Start Your Journey?</h2>
+            <p className="section-subtitle">
+               Take the first step towards financial freedom and personal growth
+               with GoalGlo.
+            </p>
+            <Link to="/book" className="btn btn-primary cta-button">
+               Book Your Free Consultation
+            </Link>
          </div>
       </section>
    );

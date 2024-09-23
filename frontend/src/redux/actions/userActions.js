@@ -21,12 +21,12 @@ export const verifyEmail = (token) => async (dispatch) => {
       const response = await apiService.post('/users/verify-email', {token});
       dispatch({
          type: VERIFY_EMAIL_SUCCESS,
-         payload: response.data
+         payload: response.data.message || 'Email verified successfully.'
       });
    } catch (error) {
       dispatch({
          type: VERIFY_EMAIL_FAILURE,
-         payload: 'Email verification failed. Please try again or contact support.'
+         payload: error.response?.data?.message || 'Email verification failed. Please try again or contact support.'
       });
    }
 };

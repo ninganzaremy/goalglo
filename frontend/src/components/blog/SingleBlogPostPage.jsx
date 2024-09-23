@@ -1,6 +1,8 @@
 import {useEffect} from 'react';
 import {useParams} from 'react-router-dom';
 import {useDispatch, useSelector} from 'react-redux';
+import DOMPurify from 'dompurify';
+
 import {fetchBlogPostById} from "../../redux/actions/blogActions";
 
 /**
@@ -22,12 +24,18 @@ const SingleBlogPostPage = () => {
 
    return (
       <div className="single-blog-post">
-         <h1>{currentPost.title}</h1>
-         <img src={currentPost.imageUrl} alt={currentPost.title}/>
-         <p>{currentPost.content}</p>
-         <p>Published on: {new Date(currentPost.publishedAt).toLocaleDateString()}</p>
-         <p>Author: {currentPost.author ? currentPost.author : 'Unknown'}</p>
-
+         <div className="container">
+            <h1>{currentPost.title}</h1>
+            <img src={currentPost.imageUrl} alt={currentPost.title} className="blog-post-image"/>
+            <div
+               className="blog-post-content"
+               dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(currentPost.content)}}
+            />
+            <div className="blog-post-meta">
+               <p>Author: {currentPost.author ? currentPost.author : 'Unknown'}</p>
+               <p>Published on: {new Date(currentPost.publishedAt).toLocaleDateString()}</p>
+            </div>
+         </div>
       </div>
    );
 };
