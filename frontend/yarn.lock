@@ -2087,7 +2087,7 @@ __metadata:
     react-router-dom: "npm:^6.25.1"
     redux-thunk: "npm:^3.1.0"
     sass: "npm:^1.79.3"
-    vite: "npm:^5.3.4"
+    vite: "npm:^5.4.7"
     vite-plugin-mkcert: "npm:^1.17.6"
   languageName: unknown
   linkType: soft
@@ -4162,7 +4162,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^5.3.4":
+"vite@npm:^5.4.7":
   version: 5.4.7
   resolution: "vite@npm:5.4.7"
   dependencies:
