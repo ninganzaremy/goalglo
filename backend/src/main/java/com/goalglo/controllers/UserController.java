@@ -39,9 +39,9 @@ public class UserController {
     *         CREATED
     */
    @PostMapping("/register")
-   public ResponseEntity<UserDTO> registerUser(@RequestBody User user) {
-      UserDTO registeredUser = userService.registerUser(user);
-      return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
+   public ResponseEntity<String> registerUser(@RequestBody User user) {
+      userService.registerUser(user);
+      return new ResponseEntity<>(HttpStatus.CREATED);
    }
 
    /**
@@ -65,8 +65,8 @@ public class UserController {
     *
     * @param userDTO the user attempting to log in
     * @return a ResponseEntity containing the authenticated user DTO and HTTP
-    *         status OK,
-    *         or HTTP status UNAUTHORIZED if authentication fails
+    * status OK,
+    * or HTTP status UNAUTHORIZED if authentication fails
     */
    @PostMapping("/login")
    public ResponseEntity<UserDTO> loginUser(@RequestBody UserDTO userDTO) {

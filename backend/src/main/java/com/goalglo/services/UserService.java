@@ -65,17 +65,15 @@ public class UserService {
     *             If the user is an existing "PROSPECT", their account will be
     *             upgraded.
     *             Otherwise, a new account will be created.
-    * @return A `UserDTO` containing the details of the registered or upgraded
-    *         user.
     */
-   public UserDTO registerUser(User user) {
+   public void registerUser(User user) {
 
       Role publicRole = roleRepository.findByName(secretConfig.getRoles().getPublicRole())
          .orElseThrow(() -> new RuntimeException("Public role not found"));
 
       Optional<User> existingUserOpt = userRepository.findByEmailOrUsername(user.getEmail(), user.getUsername());
 
-      return existingUserOpt.map(existingUser -> {
+      existingUserOpt.map(existingUser -> {
          if (existingUser.getRoles().stream().anyMatch(role -> secretConfig.getRoles().getProspectRole().equals(role.getName()))) {
             // Upgrade the existing "PROSPECT" to a registered user
             return processUserUpdate(existingUser, user, publicRole);
@@ -150,12 +148,14 @@ public class UserService {
       }
 
       User user = verificationToken.getUser();
-      user.setEmailVerified(true);
+      if (!user.isEmailVerified()) {
+         user.setEmailVerified(true);
+         userRepository.save(user);
+      }
 
-      userRepository.save(user);
       emailVerificationTokenRepository.delete(verificationToken);
 
-      return user.isEmailVerified();
+      return true;
    }
 
    /**
@@ -180,8 +180,7 @@ public class UserService {
                   .map(Role::getName)
                   .collect(Collectors.toSet()),
                3600);
-            UserDTO userDTO = new UserDTO(user);
-            userDTO.setToken(jwtToken);
+            UserDTO userDTO = new UserDTO(jwtToken);
             return Optional.of(userDTO);
          }
       }

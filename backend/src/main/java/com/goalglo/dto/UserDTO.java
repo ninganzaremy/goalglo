@@ -36,6 +36,9 @@ public class UserDTO {
       this.password = user.getPassword();
    }
 
+   public UserDTO(String token) {
+      this.token = token;
+   }
    public String getIdentifier() {
       return this.email != null && !this.email.isEmpty() ? this.email : this.username;
    }

@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -22,9 +21,6 @@ public class PaymentDTO {
    private String currency;
    private String status;
    private String paymentMethod;
-   private LocalDateTime createdAt;
-   private LocalDateTime updatedAt;
-
    public PaymentDTO(Payment payment) {
       this.id = payment.getId();
       this.userId = payment.getUser().getId();
@@ -34,7 +30,5 @@ public class PaymentDTO {
       this.paymentMethod = payment.getPaymentMethod();
 
       this.status = payment.getStatus();
-      this.createdAt = payment.getCreatedAt();
-      this.updatedAt = payment.getUpdatedAt();
    }
 }
