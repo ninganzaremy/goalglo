@@ -1,6 +1,7 @@
 import {useDispatch, useSelector} from "react-redux";
-import {registerUser} from "../redux/actions/registerAction.js";
+import {registerUser, resetRegistration} from "../redux/actions/registerAction.js";
 import {useState} from "react";
+import useConfirmationState from "../hooks/useConfirmationState";
 
 /**
  * Register component
@@ -18,28 +19,41 @@ const RegisterPage = () => {
    const [lastName, setLastName] = useState("");
    const [phoneNumber, setPhoneNumber] = useState("");
    const [address, setAddress] = useState("");
+   const [formError, setFormError] = useState("");
 
    const dispatch = useDispatch();
    const {loading, error, success} = useSelector((state) => state.register);
 
+   const handleTryAgain = () => {
+      dispatch(resetRegistration());
+   };
+
    const handleSubmit = (e) => {
       e.preventDefault();
       if (password !== confirmPassword) {
-         // Handle password mismatch
+         setFormError("Passwords do not match");
          return;
       }
+      setFormError("");
       dispatch(
          registerUser(username, email, password, firstName, lastName, phoneNumber, address)
       );
    };
+   const confirmationState = useConfirmationState(loading, success, error, {
+      loadingTitle: "Registration in Progress",
+      loadingMessage: "We're processing your registration...",
+      successTitle: "Registration Successful!",
+      successMessage: "Thank you for registering with GoalGlo. We've sent a verification email to your registered email address.",
+      successActionText: "Return to Home",
+      successActionLink: "/",
+      errorTitle: "Registration Failed",
+      errorMessage: "We couldn't complete your registration. Please try again or contact support.",
+      errorActionText: "Try Again",
+      errorActionOnClick: handleTryAgain
+   });
 
-   if (success) {
-      return (
-         <div>
-            Registration successful! Please check your email to verify your
-            account.
-         </div>
-      );
+   if (confirmationState) {
+      return confirmationState;
    }
 
    return (
@@ -47,6 +61,12 @@ const RegisterPage = () => {
          <div className="register-form">
             <form onSubmit={handleSubmit}>
                <h2>Create an Account</h2>
+
+               {formError && (
+                  <div className="error-message" role="alert">
+                     <span>{formError}</span>
+                  </div>
+               )}
 
                {error && (
                   <div className="error-message" role="alert">

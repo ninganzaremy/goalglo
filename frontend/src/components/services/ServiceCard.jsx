@@ -11,7 +11,6 @@ import {Link} from 'react-router-dom';
 const ServiceCard = ({ service }) => {
   return (
     <div className="service-card">
-      <img src={service.imageUrl} alt={service.name} className="service-image" />
       <h2>{service.name}</h2>
       <p>{service.description}</p>
        <Link to={`/services/${service.id}`} className="learn-more">

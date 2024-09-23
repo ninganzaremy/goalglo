@@ -29,16 +29,23 @@ export const useAuthHook = () => {
       return user && user.roles && user.roles.includes(decryptData(userSecuredRole()));
    }, [user]);
 
-   return useMemo(() => {
-      const newState = {user, isAuthenticated, loading, error};
-      if (JSON.stringify(prevAuthState.current) !== JSON.stringify(newState)) {
-         console.log("useAuthHook called");
-         prevAuthState.current = newState;
-         return {
-            ...newState,
-            hasSecuredRole
-         };
+   useEffect(() => {
+      const prevState = prevAuthState.current;
+      if (
+         prevState.isAuthenticated !== isAuthenticated ||
+         prevState.loading !== loading ||
+         prevState.error !== error ||
+         JSON.stringify(prevState.user) !== JSON.stringify(user)
+      ) {
+         prevAuthState.current = {user, isAuthenticated, loading, error};
       }
-      return prevAuthState.current;
-   }, [user, isAuthenticated, loading, error, hasSecuredRole]);
+   }, [user, isAuthenticated, loading, error]);
+
+   return useMemo(() => ({
+      user,
+      isAuthenticated,
+      loading,
+      error,
+      hasSecuredRole
+   }), [user, isAuthenticated, loading, error, hasSecuredRole]);
 };
