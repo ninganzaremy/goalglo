@@ -24,6 +24,12 @@ public class TestimonialDTO implements Serializable {
 
    private Testimonial.TestimonialStatus status;
 
+   /**
+    * Creates a TestimonialDTO object from a Testimonial entity.
+    *
+    * @param testimonial the Testimonial entity
+    * @return a TestimonialDTO object
+    */
    public static TestimonialDTO fromEntity(Testimonial testimonial) {
       return TestimonialDTO.builder()
          .id(testimonial.getId())

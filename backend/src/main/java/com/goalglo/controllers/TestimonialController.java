@@ -25,12 +25,25 @@ public class TestimonialController {
       this.testimonialService = testimonialService;
    }
 
+   /**
+    * Retrieves a list of approved testimonials.
+    *
+    * @return a ResponseEntity containing a list of approved testimonials
+    */
    @GetMapping
    public ResponseEntity<List<TestimonialDTO>> getApprovedTestimonials() {
       List<TestimonialDTO> testimonials = testimonialService.getApprovedTestimonials();
       return ResponseEntity.ok(testimonials);
    }
 
+   /**
+    * Creates a new testimonial.
+    *
+    * @param authentication the authenticated user
+    * @param createDTO      the testimonial data to create
+    * @return a ResponseEntity containing the created testimonial and HTTP status
+    * CREATED
+    */
    @PostMapping
    @PreAuthorize("isAuthenticated()")
    public ResponseEntity<TestimonialDTO> createTestimonial(Authentication authentication, @Valid @RequestBody TestimonialDTO createDTO) {
@@ -38,6 +51,15 @@ public class TestimonialController {
       return ResponseEntity.status(HttpStatus.CREATED).body(createdTestimonial);
    }
 
+   /**
+    * Updates an existing testimonial.
+    *
+    * @param authentication the authenticated user
+    * @param id             the ID of the testimonial to update
+    * @param updateDTO      the updated testimonial data
+    * @return a ResponseEntity containing the updated testimonial and HTTP status
+    * OK
+    */
    @PutMapping("/{id}")
    @PreAuthorize("isAuthenticated()")
    public ResponseEntity<TestimonialDTO> updateTestimonial(Authentication authentication, @PathVariable UUID id, @Valid @RequestBody TestimonialDTO updateDTO) {

@@ -25,4 +25,7 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
     * @param expirationDate The expiration date to compare.
     */
    void deleteAllByExpirationDateBefore(LocalDateTime expirationDate);
+
+   void deleteByToken(String token);
+
 }
