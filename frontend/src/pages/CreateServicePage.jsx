@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {createService} from "../redux/actions/createServiceActions.js";
+import DOMPurify from "dompurify";
 
 /**
  * Component for creating a new service.
@@ -24,10 +25,13 @@ const CreateServicePage = () => {
          [name]: name === 'price' || name === 'duration' ? Number(value) : value
       }));
    };
-
+   const sanitizedFormData = {
+      ...formData,
+      description: DOMPurify.sanitize(formData.description)
+   };
    const handleSubmit = async (e) => {
       e.preventDefault();
-         await dispatch(createService(formData));
+      await dispatch(createService(sanitizedFormData));
          setFormData({name: '', description: '', price: 0, duration: 0});
    };
 
@@ -48,14 +52,21 @@ const CreateServicePage = () => {
                />
             </div>
             <div className="form-group">
-               <label htmlFor="description">Description:</label>
+               <label htmlFor="description">Description (HTML allowed):</label>
                <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
                   required
-                  rows="3"
+                  rows="5"
+               />
+            </div>
+            <div className="form-group">
+               <label>Description Preview:</label>
+               <div
+                  className="description-preview"
+                  dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(formData.description)}}
                />
             </div>
             <div className="form-group">

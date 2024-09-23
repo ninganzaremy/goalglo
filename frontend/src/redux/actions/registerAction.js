@@ -5,6 +5,7 @@ export const REGISTER_REQUEST = 'REGISTER_REQUEST';
 export const REGISTER_SUCCESS = 'REGISTER_SUCCESS';
 export const REGISTER_FAILURE = 'REGISTER_FAILURE';
 
+export const RESET_REGISTRATION = 'RESET_REGISTRATION';
 /**
  * Action creator for registering a user.
  * @param {string} username - The username of the user.
@@ -43,3 +44,8 @@ export const registerUser = (username, email, password, firstName, lastName, pho
       }
    };
 };
+
+
+export const resetRegistration = () => ({
+   type: RESET_REGISTRATION
+});

@@ -11,6 +11,12 @@ const initialState = {
    userData: null,
    loading: false,
    error: null,
+   emailVerification: {
+      loading: false,
+      success: false,
+      error: false,
+      message: null
+   }
 };
 
 const userReducer = (state = initialState, action) => {
@@ -28,6 +34,7 @@ const userReducer = (state = initialState, action) => {
             emailVerification: {
                loading: true,
                success: false,
+               error: false,
                message: 'Verifying your email...',
             },
          };
@@ -37,6 +44,7 @@ const userReducer = (state = initialState, action) => {
             emailVerification: {
                loading: false,
                success: true,
+               error: false,
                message: action.payload,
             },
          };
@@ -46,6 +54,7 @@ const userReducer = (state = initialState, action) => {
             emailVerification: {
                loading: false,
                success: false,
+               error: true,
                message: action.payload,
             },
          };

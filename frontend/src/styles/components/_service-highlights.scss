@@ -1,6 +1,5 @@
 .service-highlights {
   @include section-padding;
-  background-color: $background-color;
 
   h2 {
     text-align: center;
@@ -37,6 +36,38 @@
     p {
       font-size: 1rem;
       color: $text-color;
+    }
+  }
+
+  // Media queries for responsiveness
+  @media (max-width: 768px) {
+    .service-list {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .service-item {
+      flex-basis: 100%;
+      max-width: 400px;
+      margin-bottom: 2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    h2 {
+      font-size: 2rem;
+    }
+
+    .service-item {
+      padding: 20px;
+
+      h3 {
+        font-size: 1.3rem;
+      }
+
+      p {
+        font-size: 0.9rem;
+      }
     }
   }
 }

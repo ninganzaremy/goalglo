@@ -16,7 +16,7 @@ export const sendContactMessage = (formData) => {
       dispatch({ type: SEND_CONTACT_MESSAGE_REQUEST });
 
       try {
-         const response = await apiService.post('/contact', formData);
+         const response = await apiService.post('/contact-messages', formData);
          dispatch({
             type: SEND_CONTACT_MESSAGE_SUCCESS,
             payload: response.data

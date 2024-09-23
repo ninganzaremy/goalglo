@@ -1,6 +1,6 @@
+@use "sass:color";
 .latest-blog-posts {
   @include section-padding;
-  background-color: $background-color;
 
   h2 {
     text-align: center;
@@ -13,22 +13,27 @@
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
-    margin-bottom: 30px;
+    gap: 2rem;
   }
 
   .blog-post-item {
-    flex-basis: calc(50% - 15px);
+    flex-basis: calc(33.333% - 20px);
     background-color: white;
     border-radius: 8px;
     padding: 30px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: translateY(-5px);
+    }
 
     h3 {
       font-size: 1.5rem;
       margin-bottom: 15px;
       color: $secondary-color;
     }
+
 
     p {
       font-size: 1rem;
@@ -43,7 +48,7 @@
       transition: color 0.3s ease;
 
       &:hover {
-        color: darken($primary-color, 15%);
+        color: color.adjust($primary-color, $lightness: -15%);
       }
     }
   }
@@ -51,7 +56,7 @@
   .view-all-link {
     display: block;
     text-align: center;
-    margin-top: 20px;
+    margin-top: 30px;
     color: $primary-color;
     text-decoration: none;
     font-weight: bold;
@@ -59,7 +64,43 @@
     transition: color 0.3s ease;
 
     &:hover {
-      color: darken($primary-color, 15%);
+      color: color.adjust($primary-color, $lightness: -15%);
+    }
+  }
+
+  // Media queries for responsiveness
+  @media (max-width: 768px) {
+    .blog-post-list {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .blog-post-item {
+      flex-basis: 100%;
+      max-width: 400px;
+      margin-bottom: 2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    h2 {
+      font-size: 2rem;
+    }
+
+    .blog-post-item {
+      padding: 20px;
+
+      h3 {
+        font-size: 1.3rem;
+      }
+
+      p {
+        font-size: 0.9rem;
+      }
+    }
+
+    .view-all-link {
+      font-size: 1rem;
     }
   }
 }

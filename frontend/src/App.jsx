@@ -62,7 +62,6 @@ const App = () => {
                   }
                />
                <Route path="/services" element={<ServicesPage/>}/>
-               <Route path="/services" element={<ServicesPage/>}/>
                <Route path="/blog" element={<BlogPage/>}/>
                <Route path="/blog/:id" element={<SingleBlogPostPage/>}/>
                <Route path="/contact" element={<ContactPage/>}/>
@@ -74,7 +73,7 @@ const App = () => {
                <Route path="/appointments" element={<AppointmentList/>}/>
                <Route path="/book" element={<ServiceBooking/>}/>
                <Route path="/verify-email" element={<EmailVerificationPage/>}/>
-               <Route path="/blog" component={BlogPostList}/>
+               <Route path="/blog" element={<BlogPostList/>}/>
                <Route path="/password-reset-request" element={<PasswordResetRequestPage/>}/>
                <Route path="/password-reset-confirm" element={<PasswordResetConfirmationPage/>}/>
                <Route path="/booking-confirmation" element={<BookingConfirmationPage/>}/>
