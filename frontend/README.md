@@ -62,7 +62,7 @@
 
 5. **Custom Hooks:**
     - Create reusable hooks for common functionalities
-    - useForm, useAuth, useApiCall
+   - useForm, useAuthHook, useApiCall
 
 6. **Code Splitting:**
     - Implement lazy loading for routes using React.lazy and Suspense

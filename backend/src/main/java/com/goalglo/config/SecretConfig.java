@@ -5,9 +5,6 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Arrays;
-import java.util.List;
-
 @Getter
 @Setter
 @Configuration
@@ -22,28 +19,25 @@ public class SecretConfig {
    private Email email;
    private Stripe stripe;
    private Contact contact;
+   private ApiGateway apiGateway;
 
-   public List<String> getAllowedDomains() {
-      return Arrays.asList(domain.getDev(), domain.getProd());
+   public String getActiveDomain() {
+      return domain.getDomainName();
    }
 
    public boolean isProd() {
       return "prod".equalsIgnoreCase(spring.getProfiles().getActive());
    }
 
-   public String getActiveDomain() {
-      return isProd() ? domain.getProd() : domain.getDev();
-   }
 
    public String getAwsBucketName() {
-      return isProd() ? aws.getBucketName().getProd() : aws.getBucketName().getDev();
+      return aws.getBucketName();
    }
 
    @Getter
    @Setter
    public static class Domain {
-      private String dev;
-      private String prod;
+      private String domainName;
    }
 
    @Getter
@@ -66,15 +60,8 @@ public class SecretConfig {
       private String accessKeyId;
       private String secretAccessKey;
       private String region;
-      private BucketName bucketName;
+      private String bucketName;
       private Ses ses;
-
-      @Getter
-      @Setter
-      public static class BucketName {
-         private String dev;
-         private String prod;
-      }
 
       @Getter
       @Setter
@@ -124,6 +111,13 @@ public class SecretConfig {
       public static class Profiles {
          private String active;
       }
+   }
+
+
+   @Getter
+   @Setter
+   public static class ApiGateway {
+      private String key;
    }
 
 }

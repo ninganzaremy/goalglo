@@ -77,7 +77,7 @@ export const getCurrentEnv = () => import.meta.env.VITE_APP_ENV;
  *
  * @returns {boolean} True if the current environment is production, false otherwise.
  */
-export const isProduction = () => getCurrentEnv() === 'production';
+export const isProduction = () => getCurrentEnv() === 'prod';
 
 /**
  * Get the API URL for the current environment.

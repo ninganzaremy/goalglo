@@ -23,12 +23,10 @@ const apiService = axios.create({
 apiService.interceptors.request.use(
    (config) => {
       const authToken = getEncryptedItem();
-      if (authToken) {
-         config.headers['Authorization'] = `Bearer ${authToken}`;
-      }
-      if (!config.headers['Content-Type']) {
-         config.headers['Content-Type'] = 'application/json';
-      }
+
+      authToken && (config.headers['Authorization'] = `Bearer ${authToken}`);
+      config.headers['Content-Type'] = config.headers['Content-Type'] || 'application/json';
+
       return config;
    },
    (error) => {
