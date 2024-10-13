@@ -1,0 +1,41 @@
+.user-dashboard {
+  padding: 2rem;
+  background-color: $background-color;
+
+  h1 {
+    font-size: 2rem;
+    color: $primary-color;
+    margin-bottom: 1.5rem;
+  }
+
+  .dashboard-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+
+    section {
+      background-color: $white;
+      padding: 1.5rem;
+      border-radius: $border-radius;
+      box-shadow: $box-shadow;
+
+      h2 {
+        font-size: 1.5rem;
+        color: $secondary-color;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        margin-bottom: 0.5rem;
+      }
+    }
+  }
+
+  .user-info {
+    grid-column: span 2;
+  }
+
+  .financial-summary, .goals, .recent-activity {
+    //todo Add specific styles for each section
+  }
+}

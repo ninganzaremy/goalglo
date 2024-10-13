@@ -1,0 +1,74 @@
+.how-it-works {
+  @include section-padding;
+
+  h2 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 2.5rem;
+    color: $primary-color;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 2rem;
+      margin-bottom: 30px;
+    }
+  }
+
+  .steps {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+
+    @media (max-width: $breakpoint-md) {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+
+  .step {
+    flex-basis: calc(25% - 20px);
+    text-align: center;
+    margin-bottom: 30px;
+
+    @media (max-width: $breakpoint-md) {
+      flex-basis: 100%;
+      max-width: 300px;
+      margin-bottom: 40px;
+    }
+
+    .step-number {
+      width: 40px;
+      height: 40px;
+      background-color: $primary-color;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 15px;
+      font-weight: bold;
+
+      @media (max-width: $breakpoint-md) {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+      }
+    }
+
+    h3 {
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+
+      @media (max-width: $breakpoint-md) {
+        font-size: 1.3rem;
+      }
+    }
+
+    p {
+      @media (max-width: $breakpoint-md) {
+        font-size: 1rem;
+        max-width: 250px;
+        margin: 0 auto;
+      }
+    }
+  }
+}

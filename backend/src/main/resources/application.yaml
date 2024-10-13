@@ -1,0 +1,94 @@
+spring:
+  cloud:
+    aws:
+      region:
+        static: ${ECR_REGION}
+      credentials:
+        instance-profile: true
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+  config:
+    activate:
+      on-profile: '!local'
+    import: aws-secretsmanager:${BACKEND_SECRET_FILE_NAME}
+
+  datasource:
+    url: ${${config.prefix}DB_URL}
+    username: ${${config.prefix}DB_USER}
+    password: ${${config.prefix}DB_PASSWORD}
+
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: ${${config.prefix}DB_URL}
+    username: ${${config.prefix}DB_USER}
+    password: ${${config.prefix}DB_PASSWORD}
+---
+
+logging:
+  level:
+    org:
+      org.springframework.cloud.aws: INFO
+      com.amazonaws: INFO
+      springframework:
+        springframework:
+          security: INFO
+        jdbc.core: INFO
+
+      hibernate:
+        SQL: INFO
+    ROOT: INFO
+
+
+app:
+  domain:
+    allowed-domain: ${${config.prefix}DOMAIN_NAME}
+
+  roles:
+    secured-role: ${SECURED_ROLE}
+    public-role: ${PUBLIC_ROLE}
+    prospect-role: ${PROSPECT_ROLE}
+
+  jwt:
+    secret: ${${config.prefix}JWT_SECRET}
+
+  aws:
+    access-key-id: ${${config.prefix}AWS_ACCESS_KEY_ID}
+    secret-access-key: ${${config.prefix}AWS_SECRET_ACCESS_KEY}
+    region: ${ECR_REGION}
+
+    bucket-name: ${${config.prefix}BUCKET_NAME}
+
+    ses:
+      source-email: ${AWS_SES_EMAIL}
+
+    cloudfront:
+      acm-certificate_arn: ${${config.prefix}CLOUDFRONT_ACM_CERTIFICATE_ARN}
+      stack-name: ${${config.prefix}CLOUDFRONT_STACK_NAME}
+      cloudfront-distribution-id: ${${config.prefix}CLOUDFRONT_DISTRIBUTION_ID}
+
+    vpc:
+      vpc-id: ${${config.prefix}VPC_ID}
+
+
+  email:
+    templates:
+      password-reset: ${PASSWORD_RESET_EMAIL_TEMPLATE}
+      thanks: ${THANKS_EMAIL_TEMPLATE}
+      contact-response: ${CONTACT_RESPONSE_EMAIL_TEMPLATE}
+      email-verification: ${EMAIL_VERIFICATION_TEMPLATE}
+      booking-confirmation-email: ${BOOKING_CONFIRMATION_EMAIL_TEMPLATE}
+
+  stripe:
+    api-key: ${${config.prefix}STRIPE_API_KEY}
+    endpoint-secret: ${${config.prefix}STRIPE_ENDPOINT_SECRET}
+
+  contact:
+    company-email: ${GOALGLO_EMAIL}
+    company-phone-number: ${GOALGLO_PHONE_NUMBER}

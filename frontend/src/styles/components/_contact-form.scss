@@ -1,0 +1,67 @@
+@use "sass:color";
+
+.contact-form {
+  background-color: $white;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+      }
+    }
+  }
+
+  .message-field {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+
+    textarea {
+      flex-grow: 1;
+      min-height: 100px;
+      resize: vertical;
+    }
+  }
+
+  button {
+    align-self: flex-start;
+    padding: 0.75rem 1.5rem;
+    background-color: $primary-color;
+    color: $white;
+    border: none;
+    border-radius: $border-radius;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: color.adjust($error-color, $lightness: -10%);
+
+    }
+  }
+}

@@ -1,0 +1,74 @@
+.about-us {
+  @include section-padding;
+  h2 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 2.5rem;
+    color: $primary-color;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 2rem;
+      margin-bottom: 30px;
+    }
+  }
+
+  .container {
+    margin: 0 auto;
+  }
+
+
+  .about-content {
+    p {
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+      font-size: 1.1rem;
+
+      @media (max-width: $breakpoint-md) {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  .vision-values {
+    background-color: $background-color;
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 2rem 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+    h3 {
+      color: $primary-color;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+
+      &:not(:first-child) {
+        margin-top: 1.5rem;
+      }
+    }
+
+    p {
+      margin-bottom: 1rem;
+    }
+  }
+
+  .btn-secondary {
+    display: block;
+    width: fit-content;
+    margin: 2rem auto 0;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    font-weight: bold;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 1rem;
+      padding: 10px 20px;
+    }
+  }
+}
