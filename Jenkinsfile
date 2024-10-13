@@ -95,7 +95,7 @@ pipeline {
  */
 def prepareEnvironment() {
     script {
-        def envPrefix = params.BRANCH_NAME == 'develop' ? 'DEV' : 'PROD'
+        def envPrefix = params.BRANCH_NAME == 'develop' ? 'PROD' : 'DEV'
         env.envPrefix = envPrefix
 
         def secretCredentialId = envPrefix == 'DEV' ? 'DEV_BACKEND_SECRET_FILE_NAME' : 'PROD_BACKEND_SECRET_FILE_NAME'
@@ -242,83 +242,83 @@ def pushBackendImage() {
 def deployBackendToECS() {
     echo "Stage: Deploy Backend to ECS - Start"
     sh """
-set -e
-set +x
-
-# Prepare the new task definition JSON
-NEW_TASK_DEF_JSON=\$(cat <<EOF
-{
-    "family": "${TASK_FAMILY}",
-    "containerDefinitions": [
+        set -e
+        set +x
+        
+        # Prepare the new task definition JSON
+        NEW_TASK_DEF_JSON=\$(cat <<EOF
         {
-            "name": "${envPrefix}-goalglo-backend",
-            "image": "${DOCKER_REGISTRY}/${ECR_BACKEND_REPOSITORY}:latest",
-            "cpu": 1024,
-            "memory": 2048,
-            "portMappings": [
+            "family": "${TASK_FAMILY}",
+            "containerDefinitions": [
                 {
-                    "containerPort": 8080,
-                    "hostPort": 8080,
-                    "protocol": "tcp"
+                    "name": "${envPrefix}-goalglo-backend",
+                    "image": "${DOCKER_REGISTRY}/${ECR_BACKEND_REPOSITORY}:latest",
+                    "cpu": 1024,
+                    "memory": 2048,
+                    "portMappings": [
+                        {
+                            "containerPort": 8080,
+                            "hostPort": 8080,
+                            "protocol": "tcp"
+                        }
+                    ],
+                    "environment": [
+                        {
+                            "name": "SPRING_PROFILES_ACTIVE",
+                            "value": "${envPrefix}"
+                        },
+                        {
+                            "name": "ECR_REGION",
+                            "value": "${ECR_REGION}"
+                        },
+                        {
+                            "name": "AWS_ACCESS_KEY_ID",
+                            "value": "${AWS_ACCESS_KEY_ID}"
+                        },
+                        {
+                            "name": "AWS_SECRET_ACCESS_KEY",
+                            "value": "${AWS_SECRET_ACCESS_KEY}"
+                        },
+                        {
+                            "name": "BACKEND_SECRET_FILE_NAME",
+                            "value": "${BACKEND_SECRET_FILE_NAME}"
+                        }
+                    ],
+                    "logConfiguration": {
+                        "logDriver": "awslogs",
+                        "options": {
+                            "awslogs-group": "${LOG_GROUP_NAME}",
+                            "awslogs-region": "${ECR_REGION}",
+                            "awslogs-stream-prefix": "ecs"
+                        }
+                    }
                 }
             ],
-            "environment": [
-                {
-                    "name": "SPRING_PROFILES_ACTIVE",
-                    "value": "${envPrefix}"
-                },
-                {
-                    "name": "ECR_REGION",
-                    "value": "${ECR_REGION}"
-                },
-                {
-                    "name": "AWS_ACCESS_KEY_ID",
-                    "value": "${AWS_ACCESS_KEY_ID}"
-                },
-                {
-                    "name": "AWS_SECRET_ACCESS_KEY",
-                    "value": "${AWS_SECRET_ACCESS_KEY}"
-                },
-                {
-                    "name": "BACKEND_SECRET_FILE_NAME",
-                    "value": "${BACKEND_SECRET_FILE_NAME}"
-                }
-            ],
-            "logConfiguration": {
-                "logDriver": "awslogs",
-                "options": {
-                    "awslogs-group": "${LOG_GROUP_NAME}",
-                    "awslogs-region": "${ECR_REGION}",
-                    "awslogs-stream-prefix": "ecs"
-                }
-            }
+            "cpu": "1024",
+            "memory": "2048",
+            "networkMode": "awsvpc",
+            "requiresCompatibilities": ["FARGATE"],
+            "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole"
         }
-    ],
-    "cpu": "1024",
-    "memory": "2048",
-    "networkMode": "awsvpc",
-    "requiresCompatibilities": ["FARGATE"],
-    "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole"
-}
-EOF
-)
-
-echo "Registering new task definition..."
-NEW_TASK_DEFINITION=\$(aws ecs register-task-definition \
-    --cli-input-json "\$NEW_TASK_DEF_JSON" \
-    --region ${ECR_REGION} \
-    --query "taskDefinition.taskDefinitionArn" \
-    --output text)
-
-echo "Updating ECS service..."
-aws ecs update-service \
-    --cluster ${CLUSTER_NAME} \
-    --service ${BACKEND_SERVICE_NAME} \
-    --task-definition \$NEW_TASK_DEFINITION \
-    --region ${ECR_REGION}
-
-set -x
-"""
+        EOF
+        )
+        
+        echo "Registering new task definition..."
+        NEW_TASK_DEFINITION=\$(aws ecs register-task-definition \
+            --cli-input-json "\$NEW_TASK_DEF_JSON" \
+            --region ${ECR_REGION} \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+        
+        echo "Updating ECS service..."
+        aws ecs update-service \
+            --cluster ${CLUSTER_NAME} \
+            --service ${BACKEND_SERVICE_NAME} \
+            --task-definition \$NEW_TASK_DEFINITION \
+            --region ${ECR_REGION}
+        
+        set -x
+    """
     echo "Stage: Deploy Backend to ECS - Completed"
 }
 /**
@@ -360,39 +360,39 @@ def invalidateCloudFrontCache() {
 def updateAPIGateway() {
     echo "Stage: Update API Gateway - Start"
     sh """
-    set +x
-
-    API_ID=${API_GATEWAY_ID}
-
-    # Get the root resource ID
-    ROOT_RESOURCE_ID=\$(aws apigateway get-resources --rest-api-id \$API_ID --region ${ECR_REGION} --query 'items[?path==`/`].id' --output text)
-
-    # Create or get the proxy resource
-    PROXY_RESOURCE_ID=\$(aws apigateway get-resources --rest-api-id \$API_ID --region ${ECR_REGION} --query 'items[?pathPart==`{proxy+}`].id' --output text)
-    if [ -z "\$PROXY_RESOURCE_ID" ]; then
-        echo "Creating proxy resource..."
-        PROXY_RESOURCE_ID=\$(aws apigateway create-resource --rest-api-id \$API_ID --parent-id \$ROOT_RESOURCE_ID --path-part "{proxy+}" --region ${ECR_REGION} --query 'id' --output text)
-    else
-        echo "Proxy resource already exists."
-    fi
-
-    # Create or update ANY method for the proxy resource
-    METHOD_EXISTS=\$(aws apigateway get-method --rest-api-id \$API_ID --resource-id \$PROXY_RESOURCE_ID --http-method ANY --region ${ECR_REGION} --query 'httpMethod' --output text || true)
-    if [ "\$METHOD_EXISTS" != "ANY" ]; then
-        echo "Creating ANY method for proxy resource..."
-        aws apigateway put-method --rest-api-id \$API_ID --resource-id \$PROXY_RESOURCE_ID --http-method ANY --authorization-type NONE --region ${ECR_REGION}
-    else
-        echo "ANY method already exists for proxy resource."
-    fi
-
-    # Update integration with the new ECS service
-    SERVICE_ENDPOINT="http://${env.BACKEND_SERVICE_NAME}.${env.CLUSTER_NAME}.${env.ECR_REGION}.amazonaws.com/{proxy}"
-    aws apigateway put-integration --rest-api-id \$API_ID --resource-id \$PROXY_RESOURCE_ID --http-method ANY --type HTTP_PROXY --integration-http-method ANY --uri "\$SERVICE_ENDPOINT" --region ${ECR_REGION} --passthrough-behavior WHEN_NO_MATCH --timeout-in-millis 29000 --cache-key-parameters "method.request.path.proxy"
-
-    # Redeploy the API
-    aws apigateway create-deployment --rest-api-id \$API_ID --stage-name ${envPrefix} --region ${ECR_REGION}
-
-    set -x
+        set +x
+    
+        API_ID=${API_GATEWAY_ID}
+    
+        # Get the root resource ID
+        ROOT_RESOURCE_ID=\$(aws apigateway get-resources --rest-api-id \$API_ID --region ${ECR_REGION} --query 'items[?path==`/`].id' --output text)
+    
+        # Create or get the proxy resource
+        PROXY_RESOURCE_ID=\$(aws apigateway get-resources --rest-api-id \$API_ID --region ${ECR_REGION} --query 'items[?pathPart==`{proxy+}`].id' --output text)
+        if [ -z "\$PROXY_RESOURCE_ID" ]; then
+            echo "Creating proxy resource..."
+            PROXY_RESOURCE_ID=\$(aws apigateway create-resource --rest-api-id \$API_ID --parent-id \$ROOT_RESOURCE_ID --path-part "{proxy+}" --region ${ECR_REGION} --query 'id' --output text)
+        else
+            echo "Proxy resource already exists."
+        fi
+    
+        # Create or update ANY method for the proxy resource
+        METHOD_EXISTS=\$(aws apigateway get-method --rest-api-id \$API_ID --resource-id \$PROXY_RESOURCE_ID --http-method ANY --region ${ECR_REGION} --query 'httpMethod' --output text || true)
+        if [ "\$METHOD_EXISTS" != "ANY" ]; then
+            echo "Creating ANY method for proxy resource..."
+            aws apigateway put-method --rest-api-id \$API_ID --resource-id \$PROXY_RESOURCE_ID --http-method ANY --authorization-type NONE --region ${ECR_REGION}
+        else
+            echo "ANY method already exists for proxy resource."
+        fi
+    
+        # Update integration with the new ECS service
+        SERVICE_ENDPOINT="http://${env.BACKEND_SERVICE_NAME}.${env.CLUSTER_NAME}.${env.ECR_REGION}.amazonaws.com/{proxy}"
+        aws apigateway put-integration --rest-api-id \$API_ID --resource-id \$PROXY_RESOURCE_ID --http-method ANY --type HTTP_PROXY --integration-http-method ANY --uri "\$SERVICE_ENDPOINT" --region ${ECR_REGION} --passthrough-behavior WHEN_NO_MATCH --timeout-in-millis 29000 --cache-key-parameters "method.request.path.proxy"
+    
+        # Redeploy the API
+        aws apigateway create-deployment --rest-api-id \$API_ID --stage-name ${envPrefix} --region ${ECR_REGION}
+    
+        set -x
     """
     echo "Stage: Update API Gateway - Completed"
 }
