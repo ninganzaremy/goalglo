@@ -22,7 +22,7 @@ public class SecretConfig {
    private ApiGateway apiGateway;
 
    public String getActiveDomain() {
-      return domain.getDomainName();
+      return domain.getAllowedDomain();
    }
 
    public boolean isProd() {
@@ -37,7 +37,7 @@ public class SecretConfig {
    @Getter
    @Setter
    public static class Domain {
-      private String domainName;
+      private String allowedDomain;
    }
 
    @Getter
