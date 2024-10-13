@@ -95,7 +95,7 @@ pipeline {
  */
 def prepareEnvironment() {
     script {
-        def envPrefix = params.BRANCH_NAME == 'develop' ? 'PROD' : 'DEV'
+        def envPrefix = params.BRANCH_NAME == 'develop' ? 'DEV' : 'PROD'
         env.envPrefix = envPrefix
 
         def secretCredentialId = envPrefix == 'DEV' ? 'DEV_BACKEND_SECRET_FILE_NAME' : 'PROD_BACKEND_SECRET_FILE_NAME'
