@@ -95,7 +95,7 @@ pipeline {
  */
 def prepareEnvironment() {
     script {
-        def envPrefix = params.BRANCH_NAME == 'develop' ? 'DEV' : 'PROD'
+        def envPrefix = params.BRANCH_NAME == 'testing' ? 'PROD' : 'DEV'
         env.envPrefix = envPrefix
 
         def secretCredentialId = envPrefix == 'DEV' ? 'DEV_BACKEND_SECRET_FILE_NAME' : 'PROD_BACKEND_SECRET_FILE_NAME'
@@ -245,63 +245,20 @@ def deployBackendToECS() {
         set -e
         set +x
         
-        # Prepare the new task definition JSON
-        NEW_TASK_DEF_JSON=\$(cat <<EOF
-        {
-            "family": "${TASK_FAMILY}",
-            "containerDefinitions": [
-                {
-                    "name": "${envPrefix}-goalglo-backend",
-                    "image": "${DOCKER_REGISTRY}/${ECR_BACKEND_REPOSITORY}:latest",
-                    "cpu": 1024,
-                    "memory": 2048,
-                    "portMappings": [
-                        {
-                            "containerPort": 8080,
-                            "hostPort": 8080,
-                            "protocol": "tcp"
-                        }
-                    ],
-                    "environment": [
-                        {
-                            "name": "SPRING_PROFILES_ACTIVE",
-                            "value": "${envPrefix}"
-                        },
-                        {
-                            "name": "ECR_REGION",
-                            "value": "${ECR_REGION}"
-                        },
-                        {
-                            "name": "AWS_ACCESS_KEY_ID",
-                            "value": "${AWS_ACCESS_KEY_ID}"
-                        },
-                        {
-                            "name": "AWS_SECRET_ACCESS_KEY",
-                            "value": "${AWS_SECRET_ACCESS_KEY}"
-                        },
-                        {
-                            "name": "BACKEND_SECRET_FILE_NAME",
-                            "value": "${BACKEND_SECRET_FILE_NAME}"
-                        }
-                    ],
-                    "logConfiguration": {
-                        "logDriver": "awslogs",
-                        "options": {
-                            "awslogs-group": "${LOG_GROUP_NAME}",
-                            "awslogs-region": "${ECR_REGION}",
-                            "awslogs-stream-prefix": "ecs"
-                        }
-                    }
-                }
-            ],
-            "cpu": "1024",
-            "memory": "2048",
-            "networkMode": "awsvpc",
-            "requiresCompatibilities": ["FARGATE"],
-            "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole"
-        }
-        EOF
-        )
+        # Read the task definition template
+        TASK_DEF_TEMPLATE=\$(cat config/task-definition.json)
+        
+        # Replace variables in the template using sed
+        NEW_TASK_DEF_JSON=\$(echo "\$TASK_DEF_TEMPLATE" | sed -e 's|\${TASK_FAMILY}|'"${TASK_FAMILY}"'|g' \
+            -e 's|\${envPrefix}|'"${envPrefix}"'|g' \
+            -e 's|\${DOCKER_REGISTRY}|'"${DOCKER_REGISTRY}"'|g' \
+            -e 's|\${ECR_BACKEND_REPOSITORY}|'"${ECR_BACKEND_REPOSITORY}"'|g' \
+            -e 's|\${ECR_REGION}|'"${ECR_REGION}"'|g' \
+            -e 's|\${AWS_ACCESS_KEY_ID}|'"${AWS_ACCESS_KEY_ID}"'|g' \
+            -e 's|\${AWS_SECRET_ACCESS_KEY}|'"${AWS_SECRET_ACCESS_KEY}"'|g' \
+            -e 's|\${BACKEND_SECRET_FILE_NAME}|'"${BACKEND_SECRET_FILE_NAME}"'|g' \
+            -e 's|\${LOG_GROUP_NAME}|'"${LOG_GROUP_NAME}"'|g' \
+            -e 's|\${AWS_ACCOUNT_ID}|'"${AWS_ACCOUNT_ID}"'|g')
         
         echo "Registering new task definition..."
         NEW_TASK_DEFINITION=\$(aws ecs register-task-definition \
