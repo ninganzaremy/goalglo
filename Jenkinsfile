@@ -246,7 +246,7 @@ def deployBackendToECS() {
         set +x
         
         # Read the task definition template
-        TASK_DEF_TEMPLATE=\$(cat config/task-definition.json)
+        TASK_DEF_TEMPLATE=\$(cat cloudformation/ecs/ecs-task-definitions/task-definition.json)
         
         # Replace variables in the template using sed
         NEW_TASK_DEF_JSON=\$(echo "\$TASK_DEF_TEMPLATE" | sed -e 's|\${TASK_FAMILY}|'"${TASK_FAMILY}"'|g' \
