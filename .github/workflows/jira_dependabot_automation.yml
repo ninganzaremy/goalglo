@@ -1,0 +1,279 @@
+name: Dependabot Alert Processing and Notification
+
+on:
+   workflow_dispatch:
+   schedule:
+      - cron: "0 19 * * *"
+   pull_request:
+      types: [opened, reopened]
+
+jobs:
+   process-dependabot-alerts:
+      runs-on: ubuntu-latest
+      permissions:
+         contents: read
+         security-events: read
+         issues: write
+      steps:
+         - name: Setup Node.js 20
+           uses: actions/setup-node@v3
+           with:
+              node-version: "20"
+
+         # Step 1: Fetch and process Dependabot alerts
+         - name: Fetch Dependabot Alerts
+           id: check_alerts
+           uses: actions/github-script@v6
+           with:
+              github-token: ${{ secrets.GIT_TOKEN }}
+              script: |
+                 try {
+                   const response = await github.request('GET /repos/{owner}/{repo}/dependabot/alerts', {
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     state: 'open',
+                     headers: {
+                       'X-GitHub-Api-Version': '2022-11-28'
+                     }
+                   });
+
+                   if (response.status === 200) {
+                     const alerts = response.data.filter(alert => 
+                       alert.security_advisory.severity === 'high' || alert.security_advisory.severity === 'critical'
+                     );
+                     if (alerts.length > 0) {
+                       core.exportVariable('ALERTS', JSON.stringify(alerts));
+                       core.setOutput('alert_count', alerts.length.toString());
+                       const fs = require('fs');
+                       fs.appendFileSync(process.env.GITHUB_ENV, `ALERTS<<EOF\n${JSON.stringify(alerts)}\nEOF\n`);
+                     } else {
+                       console.log("No high or critical severity alerts found.");
+                       core.setOutput('alert_count', '0');
+                     }
+                   }
+                 } catch (error) {
+                   console.error(`Error fetching Dependabot alerts: ${error.message}`);
+                   core.setOutput('alert_count', '0');
+                   core.setFailed(error.message);
+                 }
+
+         # Step 2: Check if JIRA integration is available
+         - name: Check JIRA Configuration
+           id: check_jira
+           if: steps.check_alerts.outputs.alert_count != '0'
+           run: |
+              if [ -n "${{ secrets.JIRA_BASE_URL }}" ] && [ -n "${{ secrets.JIRA_API_TOKEN }}" ]; then
+                echo "jira_configured=true" >> $GITHUB_OUTPUT
+              else
+                echo "jira_configured=false" >> $GITHUB_OUTPUT
+                echo "JIRA not configured, skipping JIRA integration"
+              fi
+
+         # Step 3: JIRA Integration (only if configured)
+         - name: Jira Authentication
+           if: steps.check_jira.outputs.jira_configured == 'true'
+           uses: atlassian/gajira-login@master
+           env:
+              JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+              JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+              JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+         - name: Create Jira Epic
+           if: steps.check_jira.outputs.jira_configured == 'true'
+           id: create_epic
+           uses: atlassian/gajira-create@v3
+           with:
+              project: ${{ secrets.JIRA_PROJECT}}
+              issuetype: Epic
+              summary: "Critical/High Dependabot Alerts Found"
+              description: |
+                 Critical or high severity Dependabot alerts were found. This Epic contains individual issues for each alert.
+                 Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+         - name: Create Jira Issues for Alerts
+           if: steps.check_jira.outputs.jira_configured == 'true'
+           uses: actions/github-script@v6
+           env:
+              JIRA_PROJECT: ${{ secrets.JIRA_PROJECT }}
+              EPIC_KEY: ${{ steps.create_epic.outputs.issue }}
+           with:
+              script: |
+                 async function createJiraIssue(summary, description, epicKey, issueType = "Task", parentKey = null) {
+                   const url = `${process.env.JIRA_BASE_URL}/rest/api/2/issue`;
+                   const auth = Buffer.from(`${process.env.JIRA_USER_EMAIL}:${process.env.JIRA_API_TOKEN}`).toString('base64');
+                   const headers = {
+                     "Authorization": `Basic ${auth}`,
+                     "Content-Type": "application/json"
+                   };
+                   const payload = {
+                     fields: {
+                       project: { key: process.env.JIRA_PROJECT },
+                       summary: summary,
+                       description: description,
+                       issuetype: { name: issueType },
+                       parent: parentKey ? { key: parentKey } : undefined,
+                       ...(epicKey && issueType !== "Sub-task" ? { parent: { key: epicKey } } : {})
+                     }
+                   };
+
+                   try {
+                     const response = await fetch(url, {
+                       method: 'POST',
+                       headers: headers,
+                       body: JSON.stringify(payload)
+                     });
+                     if (!response.ok) {
+                       throw new Error(`HTTP error! status: ${response.status}`);
+                     }
+                     const data = await response.json();
+                     return data.key;
+                   } catch (error) {
+                     throw new Error(`Failed to create Jira issue: ${error.message}`);
+                   }
+                 }
+
+                 async function createSubtasks(parentKey, baseSummary) {
+                   const subtasks = [
+                     { key: "DEV", name: "Development" },
+                     { key: "QA_MIGRATE", name: "Migrate to QA" },
+                     { key: "PROD_MIGRATE", name: "Migrate to Production" },
+                   ];
+
+                   for (const subtask of subtasks) {
+                     const summary = `${subtask.key}: ${baseSummary}`;
+                     const description = `Subtask for ${subtask.name} phase of ${baseSummary}`;
+                     try {
+                       const subtaskKey = await createJiraIssue(summary, description, null, "Sub-task", parentKey);
+                       console.log(`Created subtask: ${subtaskKey} for parent ${parentKey}`);
+                     } catch (error) {
+                       console.error(`Failed to create subtask for ${parentKey}. Error: ${error.message}`);
+                     }
+                   }
+                 }
+
+                 async function processAlerts(alerts, epicKey) {
+                   for (const alert of alerts) {
+                     const summary = `${alert.security_advisory.severity}: ${alert.dependency.package.name} - ${alert.security_advisory.summary}`;
+                     const cveLink = alert.security_advisory.cve_id 
+                       ? `[${alert.security_advisory.cve_id}|https://nvd.nist.gov/vuln/detail/${alert.security_advisory.cve_id}]`
+                       : 'N/A';
+                     const ghsaLink = `[${alert.security_advisory.ghsa_id}|https://github.com/advisories/${alert.security_advisory.ghsa_id}]`;
+                     const description = `
+                     h3. Alert #${alert.number}
+
+                     * Summary: ${alert.security_advisory.summary}
+                     * CVE: ${cveLink}
+                     * GHSA: ${ghsaLink}
+                     * Description: ${alert.security_advisory.description}
+                     * GitHub Alert: ${alert.html_url}
+                     `;
+
+                     try {
+                       const parentKey = await createJiraIssue(summary, description, epicKey, "Task");
+                       console.log(`Created Jira issue: ${parentKey} for alert #${alert.number}`);
+                       await createSubtasks(parentKey, summary);
+                     } catch (error) {
+                       console.error(`Failed to create Jira issue for alert #${alert.number}. Error: ${error.message}`);
+                     }
+                   }
+                 }
+
+                 const alerts = JSON.parse(process.env.ALERTS);
+                 const epicKey = process.env.EPIC_KEY;
+                 await processAlerts(alerts, epicKey);
+                 console.log("All alerts processed.");
+
+         # Step 4: Create GitHub issues and assign
+         - name: Process Dependabot Alerts
+           id: process_alerts
+           if: steps.check_alerts.outputs.alert_count != '0'
+           uses: actions/github-script@v6
+           with:
+              github-token: ${{ secrets.GIT_TOKEN }}
+              script: |
+                 const alerts = JSON.parse(process.env.ALERTS);
+                 let teamMembers = [];
+
+                 // Try to fetch team members if team exists
+                 try {
+                   const teamResponse = await github.request('GET /orgs/{org}/teams/{team_slug}/members', {
+                     org: '${{ secrets.REPO_ORG}}',
+                     team_slug: '${{ secrets.DEV_TEAM_SLUG }}',
+                     headers: {
+                       'X-GitHub-Api-Version': '2022-11-28'
+                     }
+                   });
+                   teamMembers = teamResponse.data.map(member => member.login);
+                 } catch (error) {
+                   console.log('No team configured or error fetching team members. Using repo owner as assignee.');
+                   teamMembers = [context.repo.owner];
+                 }
+
+                 console.log('Available assignees:', teamMembers);
+
+                 for (const alert of alerts) {
+                   try {
+                     // Randomly select an assignee or use repo owner
+                     const assignee = teamMembers.length > 1 
+                       ? teamMembers[Math.floor(Math.random() * teamMembers.length)]
+                       : teamMembers[0];
+
+                     const body = `@${assignee}
+
+                     **ATTENTION:** A critical or high severity Dependabot alert has been found.
+
+                     Please review the following alert and take necessary action:
+
+                     ### Alert #${alert.number}: ${alert.security_advisory.severity} - ${alert.dependency.package.name}
+
+                     **Summary:** ${alert.security_advisory.summary}
+                     **CVE:** ${alert.security_advisory.cve_id || 'N/A'}
+                     **GHSA:** [${alert.security_advisory.ghsa_id}](https://github.com/advisories/${alert.security_advisory.ghsa_id})
+                     **Description:** ${alert.security_advisory.description}
+                     **GitHub Alert:** ${alert.html_url}
+
+                     For more details, please check the [workflow run](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}).`;
+
+                     const issue = await github.request('POST /repos/{owner}/{repo}/issues', {
+                       owner: context.repo.owner,
+                       repo: context.repo.repo,
+                       title: `🚨 ${alert.security_advisory.severity} Dependabot Alert: ${alert.dependency.package.name}`,
+                       body: body,
+                       assignees: [assignee],
+                       labels: ['security', 'dependabot', 'high-priority'],
+                       headers: {
+                         'X-GitHub-Api-Version': '2022-11-28'
+                       }
+                     });
+
+                     console.log(`Issue created and assigned to ${assignee}. Issue number: ${issue.data.number}`);
+
+                     // Dismiss the alert
+                     await github.request('PATCH /repos/{owner}/{repo}/dependabot/alerts/{alert_number}', {
+                       owner: context.repo.owner,
+                       repo: context.repo.repo,
+                       alert_number: alert.number,
+                       state: 'dismissed',
+                       dismissed_reason: 'fix_started',
+                       dismissed_comment: 'Issue created and assigned. Please update the GitHub issue once the fix is complete.',
+                       headers: {
+                         'X-GitHub-Api-Version': '2022-11-28'
+                       }
+                     });
+
+                   } catch (error) {
+                     console.error(`Error processing alert #${alert.number}:`, error.message);
+                   }
+                 }
+
+         # Step 5: Workflow Summary
+         - name: Workflow Summary
+           run: |
+              echo "## Dependabot Alerts Summary" >> $GITHUB_STEP_SUMMARY
+              echo "- Alerts found: ${{ steps.check_alerts.outputs.alert_count }}" >> $GITHUB_STEP_SUMMARY
+              echo "- JIRA Integration: ${{ steps.check_jira.outputs.jira_configured }}" >> $GITHUB_STEP_SUMMARY
+              if [ "${{ steps.check_jira.outputs.jira_configured }}" == "true" ]; then
+                echo "  - Jira Epic: ${{ steps.create_epic.outputs.issue }}" >> $GITHUB_STEP_SUMMARY
+              fi
+              echo "- GitHub issues created and assigned" >> $GITHUB_STEP_SUMMARY
+              echo "- Alerts dismissed after processing" >> $GITHUB_STEP_SUMMARY
