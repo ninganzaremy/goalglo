@@ -1,0 +1,21 @@
+.contact-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 0;
+
+  h1 {
+    text-align: center;
+    color: $primary-color;
+    margin-bottom: 2rem;
+  }
+
+  .contact-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+    }
+  }
+}

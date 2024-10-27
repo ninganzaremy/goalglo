@@ -1,0 +1,53 @@
+{
+  "family": "${TASK_FAMILY}",
+  "containerDefinitions": [
+    {
+      "name": "${envPrefix}-goalglo-backend",
+      "image": "${DOCKER_REGISTRY}/${ECR_BACKEND_REPOSITORY}:latest",
+      "cpu": 1024,
+      "memory": 2048,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "SPRING_PROFILES_ACTIVE",
+          "value": "${envPrefix}"
+        },
+        {
+          "name": "ECR_REGION",
+          "value": "${ECR_REGION}"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "value": "${AWS_ACCESS_KEY_ID}"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "value": "${AWS_SECRET_ACCESS_KEY}"
+        },
+        {
+          "name": "BACKEND_SECRET_FILE_NAME",
+          "value": "${BACKEND_SECRET_FILE_NAME}"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "${LOG_GROUP_NAME}",
+          "awslogs-region": "${ECR_REGION}",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "cpu": "1024",
+  "memory": "2048",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/ecsTaskExecutionRole"
+}

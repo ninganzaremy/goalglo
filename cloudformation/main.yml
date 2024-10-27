@@ -1,0 +1,858 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation Template for the Goalglo Project.
+
+Parameters:
+   # Project and Environment Parameters
+   ProjectName:
+      Type: String
+      Default: goalglo
+      Description: The name of the project.
+
+   Environment:
+      Type: String
+      Default: prod
+      AllowedValues:
+         - dev
+         - prod
+      Description: The environment name.
+
+   # Network Configuration Parameters
+   VpcCidr:
+      Type: String
+      Default: 10.0.0.0/16
+      Description: CIDR block for the VPC.
+
+   PublicSubnet1Cidr:
+      Type: String
+      Default: 10.0.1.0/24
+      Description: CIDR block for the first public subnet.
+
+   PublicSubnet2Cidr:
+      Type: String
+      Default: 10.0.2.0/24
+      Description: CIDR block for the second public subnet.
+
+   DesiredCount:
+      Type: Number
+      Default: 2
+      Description: Desired number of ECS tasks.
+
+   # Secrets Manager Parameters
+   SecretName:
+      Type: String
+      Default: goalglo/prod/application
+      Description: The name of the existing secret in Secrets Manager.
+
+   # API Gateway Parameters
+   ApiGatewayApiKeyName:
+      Type: String
+      Default: goalglo-api-key
+      Description: Name of the API Gateway API Key.
+
+   # Frontend GitHub repository
+   FrontendRepositoryURL:
+      Type: String
+      Description: The URL of the GitHub repository for the Frontend.
+      Default: https://github.com/ninganzaremy/goalglo
+
+   # Backend GitHub repository
+   BackendRepositoryURL:
+      Type: String
+      Description: The URL of the GitHub repository for the backend.
+      Default: https://github.com/ninganzaremy/goalglo
+
+   # GitHubToken
+   GitHubToken:
+      Type: String
+      Description: GitHub OAuth Token
+      NoEcho: true
+
+   # Frontend Repo Owner
+   FrontendRepositoryOwner:
+      Type: String
+      Description: GitHub repository owner for the frontend
+      Default: ninganzaremy
+
+   # Backend Repo Owner
+   BackendRepositoryOwner:
+      Type: String
+      Description: GitHub repository owner for the Backend
+      Default: ninganzaremy
+
+   # Frontend Repository Name
+   FrontendRepositoryName:
+      Type: String
+      Description: The repository name for the Frontend.
+      Default: goalglo
+
+   # Backend Repository Name
+   BackendRepositoryName:
+      Type: String
+      Description: The repository name for the backend.
+      Default: goalglo
+   # Frontend Secret Name
+   FrontendSecretName:
+      Type: String
+      Description: The name of the frontend secret in AWS Secrets Manager.
+      Default: goalglo/prod/application
+   # Backend Secret Name
+   BackendSecretName:
+      Type: String
+      Description: The name of the Backend secret in AWS Secrets Manager.
+      Default: goalglo/frontend/application
+
+   # Existing Api Gateway Secret
+   ExistingApiGatewaySecret:
+      Type: String
+      Default: ""
+      Description: "Optional: Provide the ARN of an existing Secrets Manager secret if already created. Leave empty for new secret."
+
+Conditions:
+   ExistingApiGatewaySecretProvided: !Not [!Equals [!Ref ExistingApiGatewaySecret, ""]]
+
+Resources:
+   ############################
+   # Network Infrastructure  #
+   ############################
+
+   # VPC
+   VPC:
+      Type: AWS::EC2::VPC
+      Properties:
+         CidrBlock: !Ref VpcCidr
+         EnableDnsSupport: true
+         EnableDnsHostnames: true
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-vpc"
+
+   # Internet Gateway
+   InternetGateway:
+      Type: AWS::EC2::InternetGateway
+      Properties:
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-igw"
+
+   # Attach Internet Gateway to VPC
+   VPCGatewayAttachment:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+         VpcId: !Ref VPC
+         InternetGatewayId: !Ref InternetGateway
+
+   # Public Subnets
+   PublicSubnet1:
+      Type: AWS::EC2::Subnet
+      Properties:
+         VpcId: !Ref VPC
+         CidrBlock: !Ref PublicSubnet1Cidr
+         AvailabilityZone: !Select [0, !GetAZs ""]
+         MapPublicIpOnLaunch: true
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-public-subnet-1"
+
+   PublicSubnet2:
+      Type: AWS::EC2::Subnet
+      Properties:
+         VpcId: !Ref VPC
+         CidrBlock: !Ref PublicSubnet2Cidr
+         AvailabilityZone: !Select [1, !GetAZs ""]
+         MapPublicIpOnLaunch: true
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-public-subnet-2"
+
+   # Route Table and Routes
+   PublicRouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+         VpcId: !Ref VPC
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-public-rt"
+
+   PublicRoute:
+      Type: AWS::EC2::Route
+      DependsOn: VPCGatewayAttachment
+      Properties:
+         RouteTableId: !Ref PublicRouteTable
+         DestinationCidrBlock: 0.0.0.0/0
+         GatewayId: !Ref InternetGateway
+
+   # Associate Subnets with Route Table
+   PublicSubnet1RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+         SubnetId: !Ref PublicSubnet1
+         RouteTableId: !Ref PublicRouteTable
+
+   PublicSubnet2RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+         SubnetId: !Ref PublicSubnet2
+         RouteTableId: !Ref PublicRouteTable
+
+   ###########################
+   # Security Groups        #
+   ###########################
+
+   # Application Load Balancer Security Group
+   ALBSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+         GroupDescription: Security group for the ALB
+         VpcId: !Ref VPC
+         SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: 80
+              ToPort: 80
+              CidrIp: 0.0.0.0/0
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-alb-sg"
+
+   # ECS Security Group
+   ECSSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+         GroupDescription: Security group for ECS tasks
+         VpcId: !Ref VPC
+         SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: 8080
+              ToPort: 8080
+              SourceSecurityGroupId: !Ref ALBSecurityGroup
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-ecs-sg"
+
+   # RDS Security Group
+   RDSSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+         GroupDescription: Security group for RDS
+         VpcId: !Ref VPC
+         SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: 5432
+              ToPort: 5432
+              SourceSecurityGroupId: !Ref ECSSecurityGroup
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-rds-sg"
+
+   ###########################
+   # ECR Repository         #
+   ###########################
+
+   ECRRepository:
+      Type: AWS::ECR::Repository
+      Properties:
+         RepositoryName: !Sub "${ProjectName}-backend-repo"
+
+   ###########################
+   # ECS Cluster and Roles  #
+   ###########################
+
+   # ECS Cluster
+   ECSCluster:
+      Type: AWS::ECS::Cluster
+      Properties:
+         ClusterName: !Sub "${ProjectName}-${Environment}-ecs-cluster"
+
+   # ECS Task Execution Role
+   ECSTaskExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+         RoleName: !Sub "${ProjectName}-${Environment}-ecs-exec-role-${AWS::Region}-${AWS::StackName}"
+         AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+               - Effect: Allow
+                 Principal:
+                    Service: ecs-tasks.amazonaws.com
+                 Action: sts:AssumeRole
+         ManagedPolicyArns:
+            - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+         Policies:
+            - PolicyName: ecsTaskExecutionRolePolicy
+              PolicyDocument:
+                 Version: "2012-10-17"
+                 Statement:
+                    - Effect: Allow
+                      Action:
+                         - secretsmanager:GetSecretValue
+                      Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}*"
+                    - Effect: Allow
+                      Action:
+                         - ecr:GetAuthorizationToken
+                         - ecr:BatchCheckLayerAvailability
+                         - ecr:GetDownloadUrlForLayer
+                         - ecr:BatchGetImage
+                         - logs:CreateLogStream
+                         - logs:PutLogEvents
+                      Resource: "*"
+
+   # ECS Task Role
+   ECSTaskRole:
+      Type: AWS::IAM::Role
+      Properties:
+         RoleName: !Sub "${ProjectName}-${Environment}-ecs-task-role"
+         AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+               - Effect: Allow
+                 Principal:
+                    Service:
+                       - ecs-tasks.amazonaws.com
+                 Action: sts:AssumeRole
+         ManagedPolicyArns:
+            - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+         Policies:
+            - PolicyName: AccessSecretsManager
+              PolicyDocument:
+                 Version: "2012-10-17"
+                 Statement:
+                    - Effect: Allow
+                      Action:
+                         - secretsmanager:GetSecretValue
+                         # Limit access to specific secrets
+                      Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}*"
+
+   ###########################
+   # ECS Task Definition    #
+   ###########################
+
+   TaskDefinition:
+      Type: AWS::ECS::TaskDefinition
+      Properties:
+         Family: !Sub "${ProjectName}-${Environment}-task-def"
+         NetworkMode: awsvpc
+         RequiresCompatibilities:
+            - FARGATE
+         Cpu: "256"
+         Memory: "512"
+         ExecutionRoleArn: !GetAtt ECSTaskRole.Arn
+         TaskRoleArn: !GetAtt ECSTaskRole.Arn
+         ContainerDefinitions:
+            - Name: backend-container
+              Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}:latest"
+              PortMappings:
+                 - ContainerPort: 8080
+                   Protocol: tcp
+              Environment:
+                 - Name: DB_HOST
+                   Value: !GetAtt RDSInstance.Endpoint.Address
+                 - Name: DB_PORT
+                   Value: "5432"
+                 - Name: DB_USER
+                   Value: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_USERNAME}}"
+                 - Name: DB_PASSWORD
+                   Value: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_PASSWORD}}"
+                 - Name: AWS_REGION
+                   Value: !Ref AWS::Region
+              LogConfiguration:
+                 LogDriver: awslogs
+                 Options:
+                    awslogs-group: !Sub "/ecs/${ProjectName}-${Environment}"
+                    awslogs-region: !Ref AWS::Region
+                    awslogs-stream-prefix: ecs
+   ###########################
+   # ECS Service            #
+   ###########################
+
+   ECSService:
+      Type: AWS::ECS::Service
+      Properties:
+         Cluster: !Ref ECSCluster
+         ServiceName: !Sub "${ProjectName}-${Environment}-service"
+         TaskDefinition: !Ref TaskDefinition
+         LaunchType: FARGATE
+         DesiredCount: !Ref DesiredCount
+         NetworkConfiguration:
+            AwsvpcConfiguration:
+               AssignPublicIp: ENABLED
+               Subnets:
+                  - !Ref PublicSubnet1
+                  - !Ref PublicSubnet2
+               SecurityGroups:
+                  - !Ref ECSSecurityGroup
+         LoadBalancers:
+            - ContainerName: backend-container
+              ContainerPort: 8080
+              TargetGroupArn: !Ref TargetGroup
+      DependsOn:
+         - TaskDefinition
+         - TargetGroup
+         - LoadBalancer
+
+
+   ###########################
+   # Application Load Balancer
+   ###########################
+
+   # Load Balancer
+   LoadBalancer:
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+      DependsOn: VPCGatewayAttachment
+      Properties:
+         Name: !Sub "${ProjectName}-${Environment}-alb"
+         Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+         SecurityGroups:
+            - !Ref ALBSecurityGroup
+         Scheme: internet-facing
+         Type: application
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-alb"
+
+   # Target Group
+   TargetGroup:
+      Type: AWS::ElasticLoadBalancingV2::TargetGroup
+      Properties:
+         Name: !Sub "${ProjectName}-${Environment}-tg"
+         Port: 8080
+         Protocol: HTTP
+         VpcId: !Ref VPC
+         TargetType: ip
+         HealthCheckProtocol: HTTP
+         HealthCheckPort: "8080"
+         HealthCheckPath: /health
+         Matcher:
+            HttpCode: "200-299"
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-tg"
+
+   # ALB Listener
+   LoadBalancerListener:
+      Type: AWS::ElasticLoadBalancingV2::Listener
+      Properties:
+         LoadBalancerArn: !Ref LoadBalancer
+         Port: 80
+         Protocol: HTTP
+         DefaultActions:
+            - Type: forward
+              TargetGroupArn: !Ref TargetGroup
+
+   ###########################
+   # API Gateway            #
+   ###########################
+
+   # API Gateway REST API
+   ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+         Name: !Sub "${ProjectName}-${Environment}-api"
+         EndpointConfiguration:
+            Types:
+               - REGIONAL
+
+   # API Gateway Resource
+   ApiGatewayResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+         RestApiId: !Ref ApiGatewayRestApi
+         ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+         PathPart: "{proxy+}"
+
+   # API Gateway Method
+   ApiGatewayMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+         RestApiId: !Ref ApiGatewayRestApi
+         ResourceId: !Ref ApiGatewayResource
+         HttpMethod: ANY
+         AuthorizationType: NONE
+         ApiKeyRequired: false
+         Integration:
+            IntegrationHttpMethod: ANY
+            Type: HTTP_PROXY
+            Uri: !Sub "http://${LoadBalancer.DNSName}/{proxy}"
+            IntegrationResponses:
+               - StatusCode: "200"
+         MethodResponses:
+            - StatusCode: "200"
+
+   # API Gateway Deployment
+   ApiGatewayDeployment:
+      Type: AWS::ApiGateway::Deployment
+      DependsOn: ApiGatewayMethod
+      Properties:
+         RestApiId: !Ref ApiGatewayRestApi
+         StageName: !Sub "${Environment}"
+
+   # API Gateway API Key
+   ApiGatewayApiKey:
+      Type: AWS::ApiGateway::ApiKey
+      DependsOn: ApiGatewayDeployment
+
+      Properties:
+         Name: !Ref ApiGatewayApiKeyName
+         Enabled: true
+         StageKeys:
+            - RestApiId: !Ref ApiGatewayRestApi
+              StageName: !Sub "${Environment}"
+
+   # API Gateway Usage Plan
+   ApiGatewayUsagePlan:
+      Type: AWS::ApiGateway::UsagePlan
+      DependsOn: ApiGatewayDeployment
+      Properties:
+         UsagePlanName: !Sub "${ProjectName}-${Environment}-usage-plan"
+         ApiStages:
+            - ApiId: !Ref ApiGatewayRestApi
+              Stage: !Sub "${Environment}"
+         Throttle:
+            BurstLimit: 1000
+            RateLimit: 1000
+
+   # Associate API Key with Usage Plan
+   ApiGatewayUsagePlanKey:
+      Type: AWS::ApiGateway::UsagePlanKey
+      Properties:
+         KeyId: !Ref ApiGatewayApiKey
+         KeyType: API_KEY
+         UsagePlanId: !Ref ApiGatewayUsagePlan
+
+   # Store API Key in Secrets Manager
+   ApiGatewayApiKeySecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+         Name: !Sub "${ProjectName}/${Environment}/ApiGatewayApiKey"
+         Description: "API Gateway API Key for secure access"
+         SecretString: !Ref ApiGatewayApiKey
+   ###########################
+   # S3 Bucket and CloudFront
+   ###########################
+
+   # S3 Bucket for Frontend
+   FrontendBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+         BucketName: !Sub "${ProjectName}-${Environment}-frontend-bucket"
+         WebsiteConfiguration:
+            IndexDocument: index.html
+            ErrorDocument: error.html
+
+   # CloudFront Origin Access Identity
+   CloudFrontOAI:
+      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+      Properties:
+         CloudFrontOriginAccessIdentityConfig:
+            Comment: !Sub "${ProjectName}-${Environment}-oai"
+
+   # S3 Bucket Policy
+   FrontendBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+         Bucket: !Ref FrontendBucket
+         PolicyDocument:
+            Statement:
+               - Sid: AllowCloudFrontServicePrincipalReadOnly
+                 Effect: Allow
+                 Principal:
+                    CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+                 Action: "s3:GetObject"
+                 Resource: !Sub "arn:aws:s3:::${FrontendBucket}/*"
+
+   # CloudFront Distribution
+   CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+         DistributionConfig:
+            Origins:
+               - DomainName: !Sub "${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com"
+                 Id: ApiGatewayOrigin
+                 CustomOriginConfig:
+                    OriginProtocolPolicy: https-only
+                    OriginSSLProtocols:
+                       - TLSv1.2
+            Enabled: true
+            DefaultCacheBehavior:
+               TargetOriginId: ApiGatewayOrigin
+               ViewerProtocolPolicy: redirect-to-https
+               AllowedMethods:
+                  - GET
+                  - HEAD
+                  - OPTIONS
+                  - PUT
+                  - POST
+                  - PATCH
+                  - DELETE
+               Compress: true
+
+               ForwardedValues:
+                  QueryString: true
+                  Headers:
+                     - Authorization
+                     - Content-Type
+            ViewerCertificate:
+               CloudFrontDefaultCertificate: true
+            DefaultRootObject: index.html
+
+   ###########################
+   # RDS Database           #
+   ###########################
+
+   # RDS Subnet Group
+   RDSSubnetGroup:
+      Type: AWS::RDS::DBSubnetGroup
+      Properties:
+         DBSubnetGroupDescription: Subnet group for RDS
+         SubnetIds:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-db-subnet-group"
+
+   # PostgreSQL RDS Instance
+   RDSInstance:
+      Type: AWS::RDS::DBInstance
+      Properties:
+         DBInstanceIdentifier: !Sub "${ProjectName}-${Environment}-db"
+         AllocatedStorage: 20
+         DBInstanceClass: db.t3.micro
+         Engine: postgres
+         MasterUsername: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_USERNAME}}"
+         MasterUserPassword: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_PASSWORD}}"
+         VPCSecurityGroups:
+            - !Ref RDSSecurityGroup
+         DBSubnetGroupName: !Ref RDSSubnetGroup
+         MultiAZ: false
+         PubliclyAccessible: false
+         StorageType: gp2
+         Tags:
+            - Key: Name
+              Value: !Sub "${ProjectName}-${Environment}-db"
+
+   ###########################
+   # CodeBuild and CodePipeline
+   ###########################
+
+   # IAM Role for CodeBuild
+   CodeBuildServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+         AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+               - Effect: Allow
+                 Principal:
+                    Service: codebuild.amazonaws.com
+                 Action: sts:AssumeRole
+         ManagedPolicyArns:
+            - arn:aws:iam::aws:policy/AmazonS3FullAccess
+            - arn:aws:iam::aws:policy/CloudFrontFullAccess
+            - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
+         Policies:
+            - PolicyName: CodeBuildPolicy
+              PolicyDocument:
+                 Version: "2012-10-17"
+                 Statement:
+                    - Effect: Allow
+                      Action:
+                         - secretsmanager:GetSecretValue
+                      Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}*"
+
+   # IAM Role for CodePipeline
+   CodePipelineServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+         AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+               - Effect: Allow
+                 Principal:
+                    Service:
+                       - codepipeline.amazonaws.com
+                       - cloudformation.amazonaws.com
+                 Action: sts:AssumeRole
+         ManagedPolicyArns:
+            - arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess
+            - arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess
+
+   # CodeBuild Project for Frontend
+   FrontEndBuildProject:
+      Type: AWS::CodeBuild::Project
+      Properties:
+         Name: !Sub "${ProjectName}-${Environment}-frontend-build"
+         Source:
+            Type: GITHUB
+            Location: !Ref FrontendRepositoryURL
+            BuildSpec: "frontend/buildspec.frontend.yml"
+         Artifacts:
+            Type: NO_ARTIFACTS
+         Environment:
+            ComputeType: BUILD_GENERAL1_SMALL
+            Image: aws/codebuild/standard:4.0
+            Type: LINUX_CONTAINER
+            EnvironmentVariables:
+               - Name: BUCKET_NAME
+                 Value: !Ref FrontendBucket
+               - Name: CLOUDFRONT_DISTRIBUTION_ID
+                 Value: !Ref CloudFrontDistribution
+         ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+
+   # CodeBuild Project for Backend
+   BackEndBuildProject:
+      Type: AWS::CodeBuild::Project
+      Properties:
+         Name: !Sub "${ProjectName}-${Environment}-backend-build"
+         Source:
+            Type: GITHUB
+            Location: !Ref BackendRepositoryURL
+            BuildSpec: "backend/buildspec.backend.yml"
+         Artifacts:
+            Type: NO_ARTIFACTS
+         Environment:
+            ComputeType: BUILD_GENERAL1_MEDIUM
+            Image: aws/codebuild/standard:5.0
+            Type: LINUX_CONTAINER
+            PrivilegedMode: true
+            EnvironmentVariables:
+               - Name: AWS_ACCOUNT_ID
+                 Value: !Ref AWS::AccountId
+               - Name: AWS_REGION
+                 Value: !Ref AWS::Region
+               - Name: ECR_REPOSITORY
+                 Value: !Ref ECRRepository
+               - Name: DOCKER_REGISTRY
+                 Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com"
+         ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+
+   # CodePipeline for Frontend
+   FrontEndPipeline:
+      Type: AWS::CodePipeline::Pipeline
+      Properties:
+         Name: !Sub "${ProjectName}-${Environment}-frontend-pipeline"
+         RoleArn: !GetAtt CodePipelineServiceRole.Arn
+         ArtifactStore:
+            Type: S3
+            Location: !Ref FrontendBucket
+         Stages:
+            - Name: Source
+              Actions:
+                 - Name: Source
+                   ActionTypeId:
+                      Category: Source
+                      Owner: ThirdParty
+                      Provider: GitHub
+                      Version: 1
+                   OutputArtifacts:
+                      - Name: SourceOutput
+                   Configuration:
+                      Owner: !Ref FrontendRepositoryOwner
+                      Repo: !Ref FrontendRepositoryName
+                      Branch: main
+                      OAuthToken: !Ref GitHubToken
+                   RunOrder: 1
+            - Name: Build
+              Actions:
+                 - Name: Build
+                   ActionTypeId:
+                      Category: Build
+                      Owner: AWS
+                      Provider: CodeBuild
+                      Version: 1
+                   InputArtifacts:
+                      - Name: SourceOutput
+                   Configuration:
+                      ProjectName: !Ref FrontEndBuildProject
+                   RunOrder: 1
+            - Name: Deploy
+              Actions:
+                 - Name: Deploy
+                   ActionTypeId:
+                      Category: Deploy
+                      Owner: AWS
+                      Provider: S3
+                      Version: 1
+                   InputArtifacts:
+                      - Name: SourceOutput
+                   Configuration:
+                      BucketName: !Ref FrontendBucket
+                      Extract: true
+                   RunOrder: 1
+
+   # CodePipeline for Backend
+   BackEndPipeline:
+      Type: AWS::CodePipeline::Pipeline
+      Properties:
+         Name: !Sub "${ProjectName}-${Environment}-backend-pipeline"
+         RoleArn: !GetAtt CodePipelineServiceRole.Arn
+         ArtifactStore:
+            Type: S3
+            Location: !Ref FrontendBucket
+         Stages:
+            - Name: Source
+              Actions:
+                 - Name: Source
+                   ActionTypeId:
+                      Category: Source
+                      Owner: ThirdParty
+                      Provider: GitHub
+                      Version: 1
+                   OutputArtifacts:
+                      - Name: SourceOutput
+                   Configuration:
+                      Owner: !Ref BackendRepositoryOwner
+                      Repo: !Ref BackendRepositoryName
+                      Branch: main
+                      OAuthToken: !Ref GitHubToken
+                   RunOrder: 1
+            - Name: Build
+              Actions:
+                 - Name: Build
+                   ActionTypeId:
+                      Category: Build
+                      Owner: AWS
+                      Provider: CodeBuild
+                      Version: 1
+                   InputArtifacts:
+                      - Name: SourceOutput
+                   Configuration:
+                      ProjectName: !Ref BackEndBuildProject
+                   RunOrder: 1
+            - Name: Deploy
+              Actions:
+                 - Name: Deploy
+                   ActionTypeId:
+                      Category: Deploy
+                      Owner: AWS
+                      Provider: CloudFormation
+                      Version: 1
+                   InputArtifacts:
+                      - Name: SourceOutput
+                   Configuration:
+                      ActionMode: REPLACE_ON_FAILURE
+                      StackName: !Sub "${ProjectName}-${Environment}-backend-stack"
+                      TemplatePath: SourceOutput::backend/cloudformation.yaml
+                      Capabilities: CAPABILITY_NAMED_IAM
+                   RunOrder: 1
+
+Outputs:
+   LoadBalancerDNSName:
+      Description: The DNS name of the ALB.
+      Value: !GetAtt LoadBalancer.DNSName
+
+   ApiEndpoint:
+      Description: The endpoint of the API Gateway.
+      Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+
+   FrontendBucketName:
+      Description: The name of the S3 bucket hosting the frontend.
+      Value: !Ref FrontendBucket
+
+   CloudFrontDomainName:
+      Description: The domain name of the CloudFront distribution.
+      Value: !GetAtt CloudFrontDistribution.DomainName
+
+   ApiGatewayApiKeyValue:
+      Description: The value of the API Gateway API Key.
+      Value: !Ref ApiGatewayApiKey
