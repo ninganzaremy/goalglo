@@ -1,0 +1,52 @@
+version: 2
+updates:
+   - package-ecosystem: "npm"
+     directory: "/frontend"
+     target-branch: "develop"
+     schedule:
+        interval: "daily"
+        time: "14:00"
+        timezone: "America/Denver"
+     open-pull-requests-limit: 5
+     groups:
+        security-updates:
+           applies-to: security-updates
+           patterns:
+              - "*"
+     commit-message:
+        prefix: "npm"
+     labels:
+        - "npm dependencies"
+     ignore:
+        - dependency-name: "*"
+          update-types:
+             [
+                "version-update:semver-patch",
+                "version-update:semver-minor",
+                "version-update:semver-major",
+             ]
+
+   - package-ecosystem: "maven"
+     directory: "/backend"
+     target-branch: "develop"
+     schedule:
+        interval: "daily"
+        time: "07:00"
+     open-pull-requests-limit: 5
+     groups:
+        security-updates:
+           applies-to: security-updates
+           patterns:
+              - "*"
+     commit-message:
+        prefix: "maven"
+     labels:
+        - "maven dependencies"
+     ignore:
+        - dependency-name: "*"
+          update-types:
+             [
+                "version-update:semver-patch",
+                "version-update:semver-minor",
+                "version-update:semver-major",
+             ]
