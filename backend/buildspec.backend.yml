@@ -1,34 +1,30 @@
 version: 0.2
 
-env:
-  secrets-manager:
-    GITHUB_TOKEN: "{{resolve:secretsmanager:${SecretName}:SecretString:GITHUB_CODEPIPELINE_TOKEN}}"
-
 phases:
-  install:
-    runtime-versions:
-      java: corretto17
-      docker: 20
-    commands:
-      - echo "Installing dependencies..."
-      - mvn --version
-  pre_build:
-    commands:
-      - echo "Logging in to Amazon ECR..."
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $DOCKER_REGISTRY
-  build:
-    commands:
-      - echo "Building the Docker image..."
-      - mvn clean package -DskipTests
-      - docker build -t $DOCKER_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_RESOLVED_SOURCE_VERSION -f Dockerfile.backend .
-  post_build:
-    commands:
-      - echo "Pushing the Docker image to ECR..."
-      - docker push $DOCKER_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_RESOLVED_SOURCE_VERSION
-      - echo "Tagging the Docker image as 'latest'..."
-      - docker tag $DOCKER_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_RESOLVED_SOURCE_VERSION $DOCKER_REGISTRY/$ECR_REPOSITORY:latest
-      - docker push $DOCKER_REGISTRY/$ECR_REPOSITORY:latest
+   install:
+      runtime-versions:
+         java: corretto17
+         docker: 20
+      commands:
+         - echo "Installing dependencies..."
+         - mvn --version
+   pre_build:
+      commands:
+         - echo "Logging in to Amazon ECR..."
+         - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $DOCKER_REGISTRY
+   build:
+      commands:
+         - echo "Building the Docker image..."
+         - mvn clean package -DskipTests
+         - docker build -t $DOCKER_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_RESOLVED_SOURCE_VERSION -f Dockerfile.backend .
+   post_build:
+      commands:
+         - echo "Pushing the Docker image to ECR..."
+         - docker push $DOCKER_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_RESOLVED_SOURCE_VERSION
+         - echo "Tagging the Docker image as 'latest'..."
+         - docker tag $DOCKER_REGISTRY/$ECR_REPOSITORY:$CODEBUILD_RESOLVED_SOURCE_VERSION $DOCKER_REGISTRY/$ECR_REPOSITORY:latest
+         - docker push $DOCKER_REGISTRY/$ECR_REPOSITORY:latest
 artifacts:
-  files:
-    - '**/*'
-  discard-paths: yes
+   files:
+      - "**/*"
+   discard-paths: yes
