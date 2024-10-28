@@ -1,41 +1,37 @@
 version: 0.2
 
-env:
-  secrets-manager:
-    GITHUB_TOKEN: "{{resolve:secretsmanager:${SecretName}:SecretString:GITHUB_CODEPIPELINE_TOKEN}}"
-
 phases:
-  install:
-    runtime-versions:
-      nodejs: 18
-    commands:
-      - echo "Installing jq..."
-      - yum install -y jq
-      - echo "Installing dependencies..."
-      - cd frontend
-      - yarn install
-  pre_build:
-    commands:
-      - echo "Fetching frontend secrets..."
-      - set +x  # Disable command echoing
-      - FRONTEND_SECRETS=$(aws secretsmanager get-secret-value --secret-id $FRONTEND_SECRET_NAME --query SecretString --output text --region $AWS_REGION)
-      - echo "$FRONTEND_SECRETS" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env
-      - set -x  # Re-enable command echoing
-  build:
-    commands:
-      - echo "Building the frontend..."
-      - yarn build
-  post_build:
-    commands:
-      - echo "Deploying to S3..."
-      - aws s3 sync build/ s3://$BUCKET_NAME/ --delete --cache-control max-age=31536000,public --exclude "index.html"
-      - aws s3 cp build/index.html s3://$BUCKET_NAME/index.html --cache-control no-cache,no-store,must-revalidate
-      - echo "Invalidating CloudFront cache..."
-      - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
-      - echo "Cleaning up sensitive files..."
-      - rm -f .env
+   install:
+      runtime-versions:
+         nodejs: 18
+      commands:
+         - echo "Installing jq..."
+         - yum install -y jq
+         - echo "Installing dependencies..."
+         - cd frontend
+         - yarn install
+   pre_build:
+      commands:
+         - echo "Fetching frontend secrets..."
+         - set +x # Disable command echoing
+         - FRONTEND_SECRETS=$(aws secretsmanager get-secret-value --secret-id $FRONTEND_SECRET_NAME --query SecretString --output text --region $AWS_REGION)
+         - echo "$FRONTEND_SECRETS" | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env
+         - set -x # Re-enable command echoing
+   build:
+      commands:
+         - echo "Building the frontend..."
+         - yarn build
+   post_build:
+      commands:
+         - echo "Deploying to S3..."
+         - aws s3 sync build/ s3://$BUCKET_NAME/ --delete --cache-control max-age=31536000,public --exclude "index.html"
+         - aws s3 cp build/index.html s3://$BUCKET_NAME/index.html --cache-control no-cache,no-store,must-revalidate
+         - echo "Invalidating CloudFront cache..."
+         - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
+         - echo "Cleaning up sensitive files..."
+         - rm -f .env
 artifacts:
-  files:
-    - '**/*'
-  base-directory: frontend/build
-  discard-paths: yes
+   files:
+      - "**/*"
+   base-directory: frontend/build
+   discard-paths: yes
