@@ -34,7 +34,7 @@ Parameters:
 
    DesiredCount:
       Type: Number
-      Default: 2
+      Default: 1
       Description: Desired number of ECS tasks.
 
    # Secrets Manager Parameters
@@ -60,12 +60,6 @@ Parameters:
       Type: String
       Description: The URL of the GitHub repository for the backend.
       Default: https://github.com/ninganzaremy/goalglo
-
-   # GitHubToken
-   GitHubToken:
-      Type: String
-      Description: GitHub OAuth Token
-      NoEcho: true
 
    # Frontend Repo Owner
    FrontendRepositoryOwner:
@@ -94,11 +88,6 @@ Parameters:
    FrontendSecretName:
       Type: String
       Description: The name of the frontend secret in AWS Secrets Manager.
-      Default: goalglo/prod/application
-   # Backend Secret Name
-   BackendSecretName:
-      Type: String
-      Description: The name of the Backend secret in AWS Secrets Manager.
       Default: goalglo/frontend/application
 
    # Existing Api Gateway Secret
@@ -107,8 +96,19 @@ Parameters:
       Default: ""
       Description: "Optional: Provide the ARN of an existing Secrets Manager secret if already created. Leave empty for new secret."
 
+   FrontEndBuildProjectName:
+      Type: String
+      Default: "goalglo-prod-frontend-build"
+      Description: The name of the frontend CodeBuild project.
+
+   BackEndBuildProjectName:
+      Type: String
+      Default: "goalglo-prod-backend-build"
+      Description: The name of the backend CodeBuild project.
+
 Conditions:
-   ExistingApiGatewaySecretProvided: !Not [!Equals [!Ref ExistingApiGatewaySecret, ""]]
+   ExistingApiGatewaySecretProvided:
+      !Not [!Equals [!Ref ExistingApiGatewaySecret, ""]]
 
 Resources:
    ############################
@@ -224,6 +224,11 @@ Resources:
               FromPort: 8080
               ToPort: 8080
               SourceSecurityGroupId: !Ref ALBSecurityGroup
+         SecurityGroupEgress:
+            - IpProtocol: -1
+              FromPort: -1
+              ToPort: -1
+              CidrIp: 0.0.0.0/0
          Tags:
             - Key: Name
               Value: !Sub "${ProjectName}-${Environment}-ecs-sg"
@@ -311,15 +316,22 @@ Resources:
          ManagedPolicyArns:
             - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
          Policies:
-            - PolicyName: AccessSecretsManager
+            - PolicyName: TaskPolicy
               PolicyDocument:
                  Version: "2012-10-17"
                  Statement:
                     - Effect: Allow
                       Action:
                          - secretsmanager:GetSecretValue
-                         # Limit access to specific secrets
-                      Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}*"
+                         - rds:*
+                         - logs:CreateLogGroup
+                         - logs:CreateLogStream
+                         - logs:PutLogEvents
+                         - ecr:GetAuthorizationToken
+                         - ecr:BatchCheckLayerAvailability
+                         - ecr:GetDownloadUrlForLayer
+                         - ecr:BatchGetImage
+                      Resource: "*"
 
    ###########################
    # ECS Task Definition    #
@@ -327,17 +339,24 @@ Resources:
 
    TaskDefinition:
       Type: AWS::ECS::TaskDefinition
+      DependsOn:
+         - ECSTaskRole
+         - ECSTaskExecutionRole
+         - RDSInstance
       Properties:
          Family: !Sub "${ProjectName}-${Environment}-task-def"
          NetworkMode: awsvpc
          RequiresCompatibilities:
             - FARGATE
-         Cpu: "256"
-         Memory: "512"
+         Cpu: "512"
+         Memory: "1024"
          ExecutionRoleArn: !GetAtt ECSTaskRole.Arn
          TaskRoleArn: !GetAtt ECSTaskRole.Arn
          ContainerDefinitions:
             - Name: backend-container
+              Memory: 512
+              MemoryReservation: 256
+              Essential: true
               Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}:latest"
               PortMappings:
                  - ContainerPort: 8080
@@ -347,11 +366,17 @@ Resources:
                    Value: !GetAtt RDSInstance.Endpoint.Address
                  - Name: DB_PORT
                    Value: "5432"
+                 - Name: DB_NAME
+                   Value: goalglo_prod_db
                  - Name: DB_USER
                    Value: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_USERNAME}}"
                  - Name: DB_PASSWORD
                    Value: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_PASSWORD}}"
+                 - Name: SPRING_PROFILES_ACTIVE
+                   Value: !Ref Environment
                  - Name: AWS_REGION
+                   Value: !Ref AWS::Region
+                 - Name: AWS_DEFAULT_REGION
                    Value: !Ref AWS::Region
               LogConfiguration:
                  LogDriver: awslogs
@@ -359,18 +384,32 @@ Resources:
                     awslogs-group: !Sub "/ecs/${ProjectName}-${Environment}"
                     awslogs-region: !Ref AWS::Region
                     awslogs-stream-prefix: ecs
+                    awslogs-create-group: true
+              HealthCheck:
+                 Command:
+                    - CMD-SHELL
+                    - curl -f http://localhost:8080/health || exit 1
+                 Interval: 30
+                 Timeout: 5
+                 Retries: 3
+                 StartPeriod: 120
+
    ###########################
    # ECS Service            #
    ###########################
 
    ECSService:
       Type: AWS::ECS::Service
+      DependsOn:
+         - TargetGroup
+         - RDSInstance
       Properties:
          Cluster: !Ref ECSCluster
          ServiceName: !Sub "${ProjectName}-${Environment}-service"
          TaskDefinition: !Ref TaskDefinition
          LaunchType: FARGATE
          DesiredCount: !Ref DesiredCount
+         HealthCheckGracePeriodSeconds: 600
          NetworkConfiguration:
             AwsvpcConfiguration:
                AssignPublicIp: ENABLED
@@ -383,11 +422,6 @@ Resources:
             - ContainerName: backend-container
               ContainerPort: 8080
               TargetGroupArn: !Ref TargetGroup
-      DependsOn:
-         - TaskDefinition
-         - TargetGroup
-         - LoadBalancer
-
 
    ###########################
    # Application Load Balancer
@@ -424,6 +458,13 @@ Resources:
          HealthCheckPath: /health
          Matcher:
             HttpCode: "200-299"
+         HealthCheckIntervalSeconds: 30
+         HealthCheckTimeoutSeconds: 5
+         HealthyThresholdCount: 2
+         UnhealthyThresholdCount: 10
+         TargetGroupAttributes:
+            - Key: deregistration_delay.timeout_seconds
+              Value: "30"
          Tags:
             - Key: Name
               Value: !Sub "${ProjectName}-${Environment}-tg"
@@ -431,6 +472,9 @@ Resources:
    # ALB Listener
    LoadBalancerListener:
       Type: AWS::ElasticLoadBalancingV2::Listener
+      DependsOn:
+         - LoadBalancer
+         - TargetGroup
       Properties:
          LoadBalancerArn: !Ref LoadBalancer
          Port: 80
@@ -538,6 +582,8 @@ Resources:
          WebsiteConfiguration:
             IndexDocument: index.html
             ErrorDocument: error.html
+         VersioningConfiguration:
+            Status: Enabled
 
    # CloudFront Origin Access Identity
    CloudFrontOAI:
@@ -619,6 +665,7 @@ Resources:
          AllocatedStorage: 20
          DBInstanceClass: db.t3.micro
          Engine: postgres
+         DBName: goalglo_prod_db
          MasterUsername: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_USERNAME}}"
          MasterUserPassword: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:DB_MASTER_PASSWORD}}"
          VPCSecurityGroups:
@@ -630,6 +677,8 @@ Resources:
          Tags:
             - Key: Name
               Value: !Sub "${ProjectName}-${Environment}-db"
+         BackupRetentionPeriod: 7
+         DeletionProtection: false
 
    ###########################
    # CodeBuild and CodePipeline
@@ -639,12 +688,14 @@ Resources:
    CodeBuildServiceRole:
       Type: AWS::IAM::Role
       Properties:
+         RoleName: !Sub "${ProjectName}-${Environment}-codebuild-service-role"
          AssumeRolePolicyDocument:
             Version: "2012-10-17"
             Statement:
                - Effect: Allow
                  Principal:
-                    Service: codebuild.amazonaws.com
+                    Service:
+                       - codebuild.amazonaws.com
                  Action: sts:AssumeRole
          ManagedPolicyArns:
             - arn:aws:iam::aws:policy/AmazonS3FullAccess
@@ -658,7 +709,27 @@ Resources:
                     - Effect: Allow
                       Action:
                          - secretsmanager:GetSecretValue
-                      Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}*"
+                         - logs:CreateLogGroup
+                         - logs:CreateLogStream
+                         - logs:PutLogEvents
+                         - logs:GetLogEvents
+                         - logs:GetLogGroupFields
+                         - logs:GetQueryResults
+                      Resource:
+                         - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretName}*"
+                         - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${FrontendSecretName}*"
+                         - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ProjectName}-${Environment}-*"
+                         - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ProjectName}-${Environment}-*:*"
+                    - Effect: Allow
+                      Action:
+                         - s3:PutObject
+                         - s3:GetObject
+                         - s3:ListBucket
+                         - cloudfront:CreateInvalidation
+                         - ecr:*
+                         - s3:*
+                         - cloudfront:*
+                      Resource: "*"
 
    # IAM Role for CodePipeline
    CodePipelineServiceRole:
@@ -676,18 +747,43 @@ Resources:
          ManagedPolicyArns:
             - arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess
             - arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess
+         Policies:
+            - PolicyName: S3PutObjectPolicy
+              PolicyDocument:
+                 Version: "2012-10-17"
+                 Statement:
+                    - Effect: Allow
+                      Action:
+                         - s3:PutObject
+                         - s3:GetObject
+                         - s3:ListBucket
+                      Resource:
+                         - !Sub "arn:aws:s3:::${FrontendBucket}"
+                         - !Sub "arn:aws:s3:::${FrontendBucket}/*"
+            - PolicyName: CodeBuildPolicy
+              PolicyDocument:
+                 Version: "2012-10-17"
+                 Statement:
+                    - Effect: Allow
+                      Action:
+                         - codebuild:StartBuild
+                         - codebuild:BatchGetBuilds
+                         - codebuild:StopBuild
+                      Resource:
+                         - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${FrontEndBuildProjectName}"
+                         - !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${BackEndBuildProjectName}"
 
    # CodeBuild Project for Frontend
    FrontEndBuildProject:
       Type: AWS::CodeBuild::Project
+      DependsOn: CodeBuildServiceRole
       Properties:
-         Name: !Sub "${ProjectName}-${Environment}-frontend-build"
+         Name: !Ref FrontEndBuildProjectName
          Source:
-            Type: GITHUB
-            Location: !Ref FrontendRepositoryURL
+            Type: CODEPIPELINE
             BuildSpec: "frontend/buildspec.frontend.yml"
          Artifacts:
-            Type: NO_ARTIFACTS
+            Type: CODEPIPELINE
          Environment:
             ComputeType: BUILD_GENERAL1_SMALL
             Image: aws/codebuild/standard:4.0
@@ -697,19 +793,25 @@ Resources:
                  Value: !Ref FrontendBucket
                - Name: CLOUDFRONT_DISTRIBUTION_ID
                  Value: !Ref CloudFrontDistribution
+               - Name: FRONTEND_SECRET_NAME
+                 Value: !Ref FrontendSecretName
+               - Name: AWS_REGION
+                 Value: !Ref AWS::Region
+               - Name: SecretName
+                 Value: !Ref SecretName
          ServiceRole: !GetAtt CodeBuildServiceRole.Arn
 
    # CodeBuild Project for Backend
    BackEndBuildProject:
       Type: AWS::CodeBuild::Project
+      DependsOn: CodeBuildServiceRole
       Properties:
-         Name: !Sub "${ProjectName}-${Environment}-backend-build"
+         Name: !Ref BackEndBuildProjectName
          Source:
-            Type: GITHUB
-            Location: !Ref BackendRepositoryURL
+            Type: CODEPIPELINE
             BuildSpec: "backend/buildspec.backend.yml"
          Artifacts:
-            Type: NO_ARTIFACTS
+            Type: CODEPIPELINE
          Environment:
             ComputeType: BUILD_GENERAL1_MEDIUM
             Image: aws/codebuild/standard:5.0
@@ -724,11 +826,17 @@ Resources:
                  Value: !Ref ECRRepository
                - Name: DOCKER_REGISTRY
                  Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com"
+               - Name: SecretName
+                 Value: !Ref SecretName
          ServiceRole: !GetAtt CodeBuildServiceRole.Arn
 
    # CodePipeline for Frontend
    FrontEndPipeline:
       Type: AWS::CodePipeline::Pipeline
+      DependsOn:
+         - FrontendBucket
+         - FrontEndBuildProject
+         - CloudFrontDistribution
       Properties:
          Name: !Sub "${ProjectName}-${Environment}-frontend-pipeline"
          RoleArn: !GetAtt CodePipelineServiceRole.Arn
@@ -750,7 +858,8 @@ Resources:
                       Owner: !Ref FrontendRepositoryOwner
                       Repo: !Ref FrontendRepositoryName
                       Branch: main
-                      OAuthToken: !Ref GitHubToken
+                      # Correct format
+                      OAuthToken: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:GITHUB_CODEPIPELINE_TOKEN}}"
                    RunOrder: 1
             - Name: Build
               Actions:
@@ -783,6 +892,9 @@ Resources:
    # CodePipeline for Backend
    BackEndPipeline:
       Type: AWS::CodePipeline::Pipeline
+      DependsOn:
+         - ECRRepository
+         - BackEndBuildProject
       Properties:
          Name: !Sub "${ProjectName}-${Environment}-backend-pipeline"
          RoleArn: !GetAtt CodePipelineServiceRole.Arn
@@ -804,7 +916,8 @@ Resources:
                       Owner: !Ref BackendRepositoryOwner
                       Repo: !Ref BackendRepositoryName
                       Branch: main
-                      OAuthToken: !Ref GitHubToken
+                      # Correct format
+                      OAuthToken: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:GITHUB_CODEPIPELINE_TOKEN}}"
                    RunOrder: 1
             - Name: Build
               Actions:
@@ -835,6 +948,14 @@ Resources:
                       TemplatePath: SourceOutput::backend/cloudformation.yaml
                       Capabilities: CAPABILITY_NAMED_IAM
                    RunOrder: 1
+
+   CodeBuildSourceCredential:
+      Type: AWS::CodeBuild::SourceCredential
+      Properties:
+         AuthType: PERSONAL_ACCESS_TOKEN
+         ServerType: GITHUB
+         # Correct format
+         Token: !Sub "{{resolve:secretsmanager:${SecretName}:SecretString:GITHUB_CODEPIPELINE_TOKEN}}"
 
 Outputs:
    LoadBalancerDNSName:
