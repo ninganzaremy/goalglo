@@ -813,10 +813,9 @@ Resources:
          Artifacts:
             Type: CODEPIPELINE
          Environment:
-            ComputeType: BUILD_GENERAL1_MEDIUM
-            Image: aws/codebuild/standard:5.0
-            Type: LINUX_CONTAINER
             PrivilegedMode: true
+            Type: LINUX_CONTAINER
+            Image: aws/codebuild/standard:5.0
             EnvironmentVariables:
                - Name: AWS_ACCOUNT_ID
                  Value: !Ref AWS::AccountId
